@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+
+<head>
+  <meta charset="utf-8">
+  <title>Reader's club</title>
+  <script src="https://kit.fontawesome.com/68ab5e58d2.js" crossorigin="anonymous"></script>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-1BmE4kWBq78iYhFldvKuhfTAU6auU8tT94WrHftjDbrCEXSU1oBoqyl2QvZ6jIW3" crossorigin="anonymous">
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-ka7Sk0Gln4gmtz2MlQnikT1wXgYsOg+OMhuP+IlRH9sENBO0LRn5q+8nbTov4+1p" crossorigin="anonymous"></script>
+  <link rel="stylesheet" href="css/styles.css">
+  <link rel="stylesheet" href="https://unpkg.com/swiper@8/swiper-bundle.min.css" />
+</head>
+
+<body onload="onStartUp()">
+  <section id="title-section">
+    <!-- class="colored-section" -->
+    <!-- <div class="container-fluid"> -->
+    <!-- Nav Bar -->
+
+    <nav class="navbar navbar-expand-md navbar-dark bg-dark fixed-top">
+      <div class="container-md">
+        <a class="navbar-brand" href="#">Клуб "НЕЮНЫЙ ЧИТАТЕЛЬ"</a>
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNavAltMarkup" aria-controls="navbarNavAltMarkup" aria-expanded="false" aria-label="Toggle navigation">
+          <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="collapse navbar-collapse justify-content-end" id="navbarNavAltMarkup">
+          <div class="navbar-nav">
+            <a class="nav-link" aria-current="page" href="#library">Библиотека</a>
+            <a class="nav-link" href="#in-progress">Выбранная книга</a>
+            <a class="nav-link" href="#finished-books">Прочитанные книжки</a>
+            <a class="nav-link border-md-right choose-btn" data-bs-toggle="modal" href="#exampleModalToggle" role="button">Выбор книги</a>
+            <a class="nav-link">Контакты</a>
+            <a class="nav-link"><i class="social-icon fab fa-discord discord-icon"></i></a>
+            <a class="nav-link"><i class="social-icon fab fa-facebook-f facebook-icon"></i></a>
+          </div>
+        </div>
+      </div>
+    </nav>
+
+    <!-- </div> -->
+  </section>
+
+  <!-- <section>
+    <div class="row colored-section" id="information">
+      <div class="col-lg-6">
+        <h1 class="big-heading">Клуб "НЕЮНЫЙ ЧИТАТЕЛЬ"</h1>
+        <h2 class="title-text">Для юных и не очень, любителей литературы.</h2>
+      </div>
+
+      <div class="col-lg-6">
+        <img src="images/club-foto.jpg" class="club-foto" alt="">
+      </div>
+    </div>
+  </section> -->
+
+
+
+
+
+  <div class="container marketing">
+
+    <hr class="featurette-divider">
+    <h1 id="library">Библиотека клуба</h1>
+    <hr class="featurette-divider">
+
+    <section>
+      <!-- Swiper -->
+      <div class="swiper" id="library">
+        <div class="swiper-wrapper">
+        </div>
+        <div class="swiper-button-next"></div>
+        <div class="swiper-button-prev"></div>
+      </div>
+    </section>
+
+    <hr class="featurette-divider">
+    <h1 id="in-progress">Выбранная книжка</h1>
+    <hr class="featurette-divider">
+
+    <div class="row featurette">
+      <div class="col-md-7">
+        <h2 class="featurette-heading">День опричника. Сорокин Владимир Георгиевич</h2>
+        <!-- <p class="lead featurette-book"></p> -->
+        <p class="lead featurette-desc">
+          Супротивных много, это верно. Как только восстала Россия из пепла Серого, как только осознала себя, как только шестнадцать лет назад заложил государев батюшка Николай Платонович первый камень в фундамент Западной Стены, как только стали мы
+          отгораживаться от чуждого извне, от бесовского изнутри - так и полезли супротивные из всех щелей, аки сколопендрие зловредное. Истинно - великая идея порождает и великое сопротивление ей. Всегда были враги у государства нашего, внешние и
+          внутренние, но никогда так яростно не обострялась борьба с ними, как в период Возражения Святой Руси.
+          "День опричника" - это не праздник, как можно было бы подумать, глядя на белокаменную кремлевскую стену на обложке и стилизованный под старославянский шрифт в названии книги. День опричника - это один рабочий день государева человека Андрея
+          Комяги - понедельник, начавшийся тяжелым похмельем. А дальше все по плану - сжечь дотла дом изменника родины, разобраться с шутами-скоморохами, слетать по делам в Оренбург и Тобольск, вернуться в Москву, отужинать с Государыней, а вечером
+          попариться в баньке с братьями-опричниками. Следуя за главным героем, читатель выясняет, во что превратилась Россия к 2027 году, после восстановления монархии и возведения неприступной стены, отгораживающей ее от запада.
+        </p>
+      </div>
+      <div class="col-md-5">
+        <img class="bd-placeholder-img bd-placeholder-img-lg featurette-image img-fluid mx-auto" width="400" height="400" src="images/vladimir-sorokin-opricnik.jpg" preserveAspectRatio="xMidYMid slice" focusable="false">
+      </div>
+    </div>
+
+    <hr class="featurette-divider">
+    <h1 id="finished-books">Прочитанные книжки</h1>
+    <hr class="featurette-divider">
+
+    <div class="row featurette">
+      <div class="col-md-7">
+        <h2 class="featurette-heading">Марсианские хроники. Брэдбери Рэй</h2>
+        <!-- <p class="lead featurette-book"></p> -->
+        <p class="lead featurette-desc">
+          Хотите покорить Марс, этот странный изменчивый мир, населенный загадочными, неуловимыми обитателями и не такой уж добрый к человеку? Дерзайте. Но только приготовьтесь в полной мере испить чашу сожалений и тоски — тоски по зеленой планете
+          Земля, на которой навсегда останется ваше сердце.
+          Цикл удивительных марсианских историй Рэя Брэдбери — классическое произведение, вошедшее в «золотой фонд» мировой литературы.
+        </p>
+        <p class="lead featurette-desc"><b>Оценка клуба - 7.00</b></p>
+      </div>
+      <div class="col-md-5">
+        <img class="bd-placeholder-img bd-placeholder-img-lg featurette-image img-fluid mx-auto" width="400" height="400" src="images/rei-bredbery-marsiane.jpg" preserveAspectRatio="xMidYMid slice" focusable="false">
+      </div>
+    </div>
+
+
+    <hr class="featurette-divider">
+
+    <div class="row featurette">
+      <div class="col-md-7 order-md-2">
+        <h2 class="featurette-heading">Повелитель мух. Голдинг Уильям</h2>
+        <p class="lead featurette-desc">"Повелитель мух". Странная, страшная и бесконечно притягательная книга. История благовоспитанных мальчиков, внезапно оказавшихся на необитаемом острове. Философская притча о том, что может произойти с
+          людьми,
+          забывшими о любви и
+          милосердии. Гротескная антиутопия, роман-предупреждение и, конечно, напоминание о хрупкости мира, в котором живем мы все.</p>
+        <p class="lead featurette-desc"><b>Оценка клуба - 7.38</b></p>
+      </div>
+      <div class="col-md-5 order-md-1">
+        <img class="bd-placeholder-img bd-placeholder-img-lg featurette-image img-fluid mx-auto" width="400" height="400" src="images/william-golding-muhi.jpg" preserveAspectRatio="xMidYMid slice" focusable="false">
+
+      </div>
+    </div>
+    <hr class="featurette-divider">
+  </div>
+
+  <!-- <section id="in-progress">
+      <h1 class="in-progress-title">Выбранная книга</h1>
+      <img src="" class="book-img" alt="">
+      <h2 class="in-progress-title">Title</h2>
+      <h3 class="in-progress-title">author</h3>
+    </section> -->
+
+  <!-- <section id="library" class="colored-section">
+    <h1>Библиотека</h1>
+    <div id="library-carousel" class="carousel slide" data-bs-ride="carousel">
+      <div class="carousel-inner">
+        <button class="carousel-control-prev library-prev-btn" type="button" data-bs-target="#library-carousel" data-bs-slide="prev">
+          <span class="carousel-control-prev-icon" aria-hidden="true"></span>
+          <span class="visually-hidden">Previous</span>
+        </button>
+        <button class="carousel-control-next" type="button" data-bs-target="#library-carousel" data-bs-slide="next">
+          <span class="carousel-control-next-icon" aria-hidden="true"></span>
+          <span class="visually-hidden">Next</span>
+        </button>
+      </div>
+    </div>
+  </section> -->
+
+
+  <section id="book-choose">
+    <!-- <h1 class="in-progress-title">Выбор книжки</h1> -->
+    <div class="modal fade" id="exampleModalToggle" aria-hidden="true" aria-labelledby="exampleModalToggleLabel" tabindex="-1">
+      <div class="modal-dialog modal-dialog-centered modal-xl">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h4 class="modal-title w-100" id="exampleModalToggleLabel">Добавьте книжку в список</h4>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+          <div class="row cards">
+          </div>
+
+          <div class="modal-footer">
+            <button type="button" class="random-book-btn btn btn-danger" data-bs-target="#exampleModalToggle2" data-bs-toggle="modal">Случайный выбор</button>
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
+            <button class="btn btn-success choose-book-btn" data-bs-target="#error-modal" data-bs-toggle="modal">Подтвердить</button>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="modal fade" id="exampleModalToggle2" aria-hidden="true" aria-labelledby="exampleModalToggleLabel2" tabindex="-1">
+      <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title" id="exampleModalToggleLabel2">Выбранная книжка</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+          <div class="modal-body random-book-result">
+            <img class="random-book-img" src="" alt="">
+            <h1 class="in-progress-title">Автор</h1>
+            <h2 class="in-progress-title">Название</h2>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="modal fade" id="error-modal" aria-hidden="true" aria-labelledby="exampleModalToggleLabel2" tabindex="-1">
+      <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title" id="exampleModalToggleLabel2">Ошибка</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+          <div class="modal-body">
+            <h4>Добавьте книжки для выбора</h4>
+          </div>
+        </div>
+      </div>
+    </div>
+    <!-- <a class="btn btn-success choose-btn" data-bs-toggle="modal" href="#exampleModalToggle" role="button">Выбрать книжку</a> -->
+    </div>
+    <footer id="footer">
+      <div class="container-fluid">
+        <p>© Copyright 2022 Reader's club</p>
+      </div>
+    </footer>
+  </section>
+
+
+
+  <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+  <script src="js/index.js" charset="utf-8"></script>
+  <script src="https://unpkg.com/swiper@8/swiper-bundle.min.js"></script>
+</body>
+
+</html>

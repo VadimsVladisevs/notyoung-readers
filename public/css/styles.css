@@ -1,0 +1,165 @@
+body {
+  text-align: center;
+}
+
+h1, h2, h3, .title-header {
+  margin: 30px;
+  font-family: 'Lobster', cursive;
+  /* text-shadow: 5px 0 #232931; */
+  /* color: #4ECCA3; */
+}
+
+h1 {
+  font-size: 4rem;
+}
+
+h2 {
+  font-size: 2rem;
+}
+
+h3 {
+  font-size: 1rem;
+}
+
+a {
+  color: none;
+}
+
+h5 {
+  font-size: 0.94rem;
+  font-weight: bold;
+}
+
+.random-book-btn {
+  margin-right: 705px;
+}
+
+.choose-book-btn {
+  margin-right: 16px;
+}
+
+.border-md-right {
+  border-right: 1px solid silver;
+}
+
+.img-fluid {
+  margin-left: -20px;
+}
+
+.cards {
+  margin-left: 30px;
+}
+.navbar>.container, .navbar>.container-fluid, .navbar>.container-lg, .navbar>.container-md, .navbar>.container-sm, .navbar>.container-xl, .navbar>.container-xxl {
+    margin-left: 600px;
+}
+
+.navbar-dark .navbar-brand {
+  margin-left: -580px;
+}
+
+#information {
+  margin-top: 30px;
+}
+
+.title-text {
+  text-align: left;
+}
+
+.club-foto {
+  width: 15%;
+  position: absolute;
+  margin-left: -300px;
+  margin-top: 100px;
+  padding-right: 15px;
+
+}
+
+.in-progress-title {
+  text-shadow: 1px 0 #232931;
+}
+
+.book-img {
+  width: 15%;
+  /* border-radius: 100%; */
+  margin: auto;
+}
+
+.random-book-img {
+  width: 50%;
+  /* border-radius: 100%; */
+  margin: auto;
+}
+
+/* .book-author .book-title{
+  top: 50%;
+  transform: translateY(-50%);
+} */
+
+.colored-section {
+  background-color: #393E46;
+  padding-bottom: 1px;
+}
+
+.container-fluid {
+  padding: 3% 15% 1%;
+  text-align: center;
+}
+
+.swiper-img {
+  margin: auto;
+  width: 200px;
+  height: 300px;
+  /* height: 300px; */
+  /* height: 280px; */
+ }
+
+
+.swiper-col {
+  width: 80%;
+}
+
+.swiper-card-body {
+  border-top-style: solid;
+  border-width: thin;
+}
+
+/* .swiper-slide {
+  height: 100px;
+  width: 50px;
+} */
+
+.featurette-divider {
+  margin: 5rem 0; /* Space out the Bootstrap <hr> more */
+}
+
+/* MARKETING CONTENT
+-------------------------------------------------- */
+
+/* Center align the text within the three columns below the carousel */
+.marketing .col-lg-4 {
+  margin-bottom: 1.5rem;
+  text-align: center;
+}
+.marketing h2 {
+  font-weight: 400;
+}
+/* rtl:begin:ignore */
+.marketing .col-lg-4 p {
+  margin-right: .75rem;
+  margin-left: .75rem;
+}
+
+.featurette-heading {
+  font-weight: 300;
+  line-height: 1;
+  /* rtl:remove */
+  letter-spacing: -.05rem;
+}
+
+.featurette-book {
+  font-weight: bold;
+}
+
+.featurette-desc {
+  text-align: left;
+}
