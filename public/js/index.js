@@ -19,6 +19,7 @@ function createBooks(books) {
   var book18 = new Book("Глотнуть воздуха", "Джордж Оруэлл", "images/oruell-vozduh.jpg", books.NEW);
   var book19 = new Book("Трудно быть богом", "Аркадий и Борис Стругацкие", "images/strugackie-bogom.jpg", books.NEW);
   var book20 = new Book("Отель «Персефона»", "Наталья Елецкая", "images/eleckaja-otelj.jpg", books.NEW);
+  var book21 = new Book("Властитель душ", "Ирен Немировски", "images/nemirovski-ames.jpg", books.NEW);
 
   books.library.push(book1);
   books.library.push(book2);
@@ -40,6 +41,7 @@ function createBooks(books) {
   books.library.push(book18);
   books.library.push(book19);
   books.library.push(book20);
+  books.library.push(book21);
 }
 
 function Books() {
