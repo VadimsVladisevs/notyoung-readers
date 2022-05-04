@@ -6,14 +6,14 @@ function createBooks(books) {
   var book5 = new Book("К югу от границы, на запад от солнца", "Харуки Мураками", "images/haruki-murakami-jug.jpg", books.NEW);
   var book6 = new Book("Цветы для Элджернона", "Даниэл Киз", "images/daniel-kiz-cveti.jpg", books.NEW);
   var book7 = new Book("Великий Гэтсби", "Френсис Скотт Фицджеральд", "images/frensis-scott-gatsby.jpg", books.NEW);
-  var book8 = new Book("День Опричника", "Владимир Сорокин", "images/vladimir-sorokin-opricnik.jpg", books.PROGRESS);
+  var book8 = new Book("День Опричника", "Владимир Сорокин", "images/vladimir-sorokin-opricnik.jpg", books.FINISHED);
   var book9 = new Book("Москва-Петушки", "Венедикт Ерофеев", "images/venedikt-jerofeev-moskva.jpg", books.NEW);
   var book10 = new Book("Самый богатый человек в Вавилоне", "Джордж Клейсон", "images/george-clason-vavilon.jpg", books.NEW);
   var book11 = new Book("Повелитель мух", "Голдинг Уильям", "images/william-golding-muhi.jpg", books.FINISHED);
   var book12 = new Book("Марсианские хроники", "Рей Бредбери", "images/rei-bredbery-marsiane.jpg", books.FINISHED);
   var book13 = new Book("Бойня номер пять", "Курт Воннегут", "images/vonnegut-bojnja-5.jpg", books.NEW);
   var book14 = new Book("О дивный новый мир", "Олдос Хаксли", "images/oldos-haksli-mir.jpg", books.NEW);
-  var book15 = new Book("Обитаемый остров", "Аркадий и Борис Стругацкие", "images/strugackie-ostrov.jpg", books.NEW);
+  var book15 = new Book("Обитаемый остров", "Аркадий и Борис Стругацкие", "images/strugackie-ostrov.jpg", books.PROGRESS);
   var book16 = new Book("Женщины", "Чарльз Буковски", "images/bukovski-womens.jpg", books.NEW);
   var book17 = new Book("Хоббит, или Туда и обратно", "Джон Р. Р. Толкин", "images/tolkin-hobbit.jpg", books.NEW);
   var book18 = new Book("Глотнуть воздуха", "Джордж Оруэлл", "images/oruell-vozduh.jpg", books.NEW);
@@ -21,6 +21,10 @@ function createBooks(books) {
   var book20 = new Book("Отель «Персефона»", "Наталья Елецкая", "images/eleckaja-otelj.jpg", books.NEW);
   var book21 = new Book("Властитель душ", "Ирен Немировски", "images/nemirovski-ames.jpg", books.NEW);
 
+  books.finishedBooks.push(book11);
+  books.finishedBooks.push(book12);
+  books.finishedBooks.push(book8);
+  books.inProgress.push(book15);
   books.library.push(book1);
   books.library.push(book2);
   books.library.push(book3);
@@ -30,24 +34,25 @@ function createBooks(books) {
   books.library.push(book7);
   books.library.push(book9);
   books.library.push(book10);
-  books.finishedBooks.push(book11);
-  books.finishedBooks.push(book12);
-  books.inProgress.push(book8);
   books.library.push(book13);
   books.library.push(book14);
-  books.library.push(book15);
   books.library.push(book16);
   books.library.push(book17);
   books.library.push(book18);
   books.library.push(book19);
   books.library.push(book20);
   books.library.push(book21);
+
+  Array.prototype.push.apply(books.allBooks, books.library);
+  Array.prototype.push.apply(books.allBooks, books.inProgress);
+  Array.prototype.push.apply(books.allBooks, books.finishedBooks);
 }
 
 function Books() {
   this.library = [];
   this.finishedBooks = [];
   this.inProgress = [];
+  this.allBooks = [];
   this.choosenBooks = new Set();
   this.FINISHED = "finished";
   this.PROGRESS = "progress";
@@ -133,7 +138,7 @@ function addBooksToCards(books) {
 }
 
 function addBookToSwiper(books) {
-  books.library.forEach(book => {
+  books.allBooks.forEach(book => {
         const swiperSlide = $('<div/>').addClass("swiper-slide");
         const colDiv = $('<div/>').addClass('col swiper-col');
         const mainDiv = $('<div/>').addClass('card swiper-card');
@@ -182,7 +187,7 @@ function chooseRandomBook(booksList) {
 function onStartUp() {
   var books = new Books();
   createBooks(books);
-  addBooksToCarousel(books.library);
+  addBooksToCarousel(books.allBooks);
   addCurrentBook(books.inProgress);
   addBooksToCards(books);
   addBookToSwiper(books);
