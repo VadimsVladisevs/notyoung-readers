@@ -228,7 +228,7 @@ function onStartUp() {
   });
 
   $(".discord-icon").click(function() {
-    window.open('https://discord.gg/ATKmvgtD', '_blank');
+    window.open('https://discord.gg/cHrschCSj9', '_blank');
   });
 
   $(".fa-image").click(function() {
