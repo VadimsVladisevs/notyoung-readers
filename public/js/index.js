@@ -13,18 +13,20 @@ function createBooks(books) {
   var book12 = new Book("Марсианские хроники", "Рей Бредбери", "images/rei-bredbery-marsiane.jpg", books.FINISHED);
   var book13 = new Book("Бойня номер пять", "Курт Воннегут", "images/vonnegut-bojnja-5.jpg", books.NEW);
   var book14 = new Book("О дивный новый мир", "Олдос Хаксли", "images/oldos-haksli-mir.jpg", books.NEW);
-  var book15 = new Book("Обитаемый остров", "Аркадий и Борис Стругацкие", "images/strugackie-ostrov.jpg", books.PROGRESS);
+  var book15 = new Book("Обитаемый остров", "Аркадий и Борис Стругацкие", "images/strugackie-ostrov.jpg", books.FINISHED);
   var book16 = new Book("Женщины", "Чарльз Буковски", "images/bukovski-womens.jpg", books.NEW);
   var book17 = new Book("Хоббит, или Туда и обратно", "Джон Р. Р. Толкин", "images/tolkin-hobbit.jpg", books.NEW);
-  var book18 = new Book("Глотнуть воздуха", "Джордж Оруэлл", "images/oruell-vozduh.jpg", books.NEW);
+  var book18 = new Book("Глотнуть воздуха", "Джордж Оруэлл", "images/oruell-vozduh.jpg", books.PROGRESS);
   var book19 = new Book("Трудно быть богом", "Аркадий и Борис Стругацкие", "images/strugackie-bogom.jpg", books.NEW);
   var book20 = new Book("Отель «Персефона»", "Наталья Елецкая", "images/eleckaja-otelj.jpg", books.NEW);
   var book21 = new Book("Властитель душ", "Ирен Немировски", "images/nemirovski-ames.jpg", books.NEW);
+  var book22 = new Book("Шум и ярость", "Уильям Фолкнер", "images/shum-i-jarostj.jpg", books.NEW);
 
   books.finishedBooks.push(book11);
   books.finishedBooks.push(book12);
   books.finishedBooks.push(book8);
-  books.inProgress.push(book15);
+  books.finishedBooks.push(book15);
+  books.inProgress.push(book18);
   books.library.push(book1);
   books.library.push(book2);
   books.library.push(book3);
@@ -38,10 +40,10 @@ function createBooks(books) {
   books.library.push(book14);
   books.library.push(book16);
   books.library.push(book17);
-  books.library.push(book18);
   books.library.push(book19);
   books.library.push(book20);
   books.library.push(book21);
+  books.library.push(book22);
 
   Array.prototype.push.apply(books.allBooks, books.library);
   Array.prototype.push.apply(books.allBooks, books.inProgress);
@@ -227,6 +229,10 @@ function onStartUp() {
 
   $(".discord-icon").click(function() {
     window.open('https://discord.gg/ATKmvgtD', '_blank');
+  });
+
+  $(".fa-image").click(function() {
+    window.open('https://miro.com/app/board/uXjVOIQRq2I=/', '_blank');
   });
 
   var swiper = new Swiper('.swiper', {

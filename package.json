@@ -11,8 +11,13 @@
   },
   "author": "Vadims Vladisevs",
   "license": "ISC",
+  "engines": {
+    "node": "16.14.2"
+  },
   "dependencies": {
+    "body-parser": "^1.20.0",
     "express": "^4.17.3",
-    "https": "^1.0.0"
+    "https": "^1.0.0",
+    "mongoose": "^6.3.5"
   }
 }
