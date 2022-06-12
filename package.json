@@ -15,9 +15,14 @@
     "node": "16.14.2"
   },
   "dependencies": {
+    "bluebird": "^3.7.2",
     "body-parser": "^1.20.0",
+    "browserify": "^17.0.0",
+    "ejs": "^3.1.8",
     "express": "^4.17.3",
     "https": "^1.0.0",
-    "mongoose": "^6.3.5"
+    "mongoose": "^6.3.5",
+    "nodemon": "^2.0.16",
+    "uniq": "^1.0.1"
   }
 }
