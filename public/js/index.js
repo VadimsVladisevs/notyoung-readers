@@ -1,53 +1,36 @@
-function createBooks(books) {
-  var book1 = new Book("Дневник Анны Франк", "Анна Франк", "images/anna-frank-dnevnik.jpg", books.NEW);
-  var book2 = new Book("Крупная рыба", "Даниел Уоллес", "images/daniel-wallace-riba.jpg", books.NEW);
-  var book3 = new Book("Бойцовский клуб", "Чак Паланик", "images/chak-palanik-klub.jpg", books.NEW);
-  var book4 = new Book("Вторая жизнь Уве", "Фредрик Бикман", "images/fredrick-bikman-uve.jpg", books.NEW);
-  var book5 = new Book("К югу от границы, на запад от солнца", "Харуки Мураками", "images/haruki-murakami-jug.jpg", books.NEW);
-  var book6 = new Book("Цветы для Элджернона", "Даниэл Киз", "images/daniel-kiz-cveti.jpg", books.NEW);
-  var book7 = new Book("Великий Гэтсби", "Френсис Скотт Фицджеральд", "images/frensis-scott-gatsby.jpg", books.NEW);
-  var book8 = new Book("День Опричника", "Владимир Сорокин", "images/vladimir-sorokin-opricnik.jpg", books.FINISHED);
-  var book9 = new Book("Москва-Петушки", "Венедикт Ерофеев", "images/venedikt-jerofeev-moskva.jpg", books.NEW);
-  var book10 = new Book("Самый богатый человек в Вавилоне", "Джордж Клейсон", "images/george-clason-vavilon.jpg", books.NEW);
-  var book11 = new Book("Повелитель мух", "Голдинг Уильям", "images/william-golding-muhi.jpg", books.FINISHED);
-  var book12 = new Book("Марсианские хроники", "Рей Бредбери", "images/rei-bredbery-marsiane.jpg", books.FINISHED);
-  var book13 = new Book("Бойня номер пять", "Курт Воннегут", "images/vonnegut-bojnja-5.jpg", books.NEW);
-  var book14 = new Book("О дивный новый мир", "Олдос Хаксли", "images/oldos-haksli-mir.jpg", books.NEW);
-  var book15 = new Book("Обитаемый остров", "Аркадий и Борис Стругацкие", "images/strugackie-ostrov.jpg", books.FINISHED);
-  var book16 = new Book("Женщины", "Чарльз Буковски", "images/bukovski-womens.jpg", books.NEW);
-  var book17 = new Book("Хоббит, или Туда и обратно", "Джон Р. Р. Толкин", "images/tolkin-hobbit.jpg", books.NEW);
-  var book18 = new Book("Глотнуть воздуха", "Джордж Оруэлл", "images/oruell-vozduh.jpg", books.PROGRESS);
-  var book19 = new Book("Трудно быть богом", "Аркадий и Борис Стругацкие", "images/strugackie-bogom.jpg", books.NEW);
-  var book20 = new Book("Отель «Персефона»", "Наталья Елецкая", "images/eleckaja-otelj.jpg", books.NEW);
-  var book21 = new Book("Властитель душ", "Ирен Немировски", "images/nemirovski-ames.jpg", books.NEW);
-  var book22 = new Book("Шум и ярость", "Уильям Фолкнер", "images/shum-i-jarostj.jpg", books.NEW);
 
-  books.finishedBooks.push(book11);
-  books.finishedBooks.push(book12);
-  books.finishedBooks.push(book8);
-  books.finishedBooks.push(book15);
-  books.inProgress.push(book18);
-  books.library.push(book1);
-  books.library.push(book2);
-  books.library.push(book3);
-  books.library.push(book4);
-  books.library.push(book5);
-  books.library.push(book6);
-  books.library.push(book7);
-  books.library.push(book9);
-  books.library.push(book10);
-  books.library.push(book13);
-  books.library.push(book14);
-  books.library.push(book16);
-  books.library.push(book17);
-  books.library.push(book19);
-  books.library.push(book20);
-  books.library.push(book21);
-  books.library.push(book22);
+function fetchAllBooks() {
+  return fetch('http://localhost:3000/books').then(response => {
+    return response.json();
+  }).catch(err => {
+    console.log(err);
+  });
+}
 
-  Array.prototype.push.apply(books.allBooks, books.library);
-  Array.prototype.push.apply(books.allBooks, books.inProgress);
-  Array.prototype.push.apply(books.allBooks, books.finishedBooks);
+function fetchBooksByStatus(status) {
+  return fetch(`http://localhost:3000/books?status=${status}`).then(response => {
+    return response.json();
+  }).catch(err => {
+    console.log(err);
+  });
+}
+
+function fetchLibraryData(books) {
+  fetchAllBooks().then((foundBooks) => {
+    books.allBooks = foundBooks;
+  });
+
+  fetchBooksByStatus(books.FINISHED).then((foundBooks) => {
+    books.finishedBooks = foundBooks;
+  });
+
+  fetchBooksByStatus(books.PROGRESS).then((foundBooks) => {
+    books.inProgress = foundBooks;
+  });
+
+  fetchBooksByStatus(books.NEW).then((foundBooks) => {
+    books.library = foundBooks;
+  });
 }
 
 function Books() {
@@ -59,42 +42,12 @@ function Books() {
   this.FINISHED = "finished";
   this.PROGRESS = "progress";
   this.NEW = "new";
-
-  // addBook = function() {
-  //   console.log(this);
-  //   console.log(books.library);
-  //   switch (this.status) {
-  //     case books.FINISHED:
-  //       books.finishedBooks.push(this);
-  //       break;
-  //     case books.PROGRESS:
-  //       books.inProgress.push(this);
-  //       break;
-  //     default:
-  //       books.library.push(this);
-  //       break;
-  //   }
-  //   return true;
-  // }
-}
-
-
-
-function Book(title, author, img, status) {
-  // var books = this;
-  // this.FINISHED = "finished";
-  // this.PROGRESS = "progress";
-  // this.NEW = "new";
-  this.title = title;
-  this.author = author;
-  this.img = img;
-  this.status = status;
 }
 
 function addBooksToCarousel(list) {
   list.forEach(book => {
     const newDiv = $('<div/>').addClass("carousel-item container-fluid");
-    const newImg = $('<img/>').attr("src", book.img).addClass("d-block w-200 book-img");
+    const newImg = $('<img/>').attr("src", book.image).addClass("d-block w-200 book-img");
     const newTitle = $('<h1/>').addClass("book-title").text(book.title);
     const newAuthor = $('<h2/>').addClass("book-author").text(book.author);
     newDiv.append(newImg);
@@ -115,7 +68,7 @@ function addBooksToCards(books) {
     const cardDiv = $('<div/>').addClass("card mb-3").css("max-width", "540px");
     const firstRowDiv = $('<div/>').addClass("row g-0");
     const colDiv = $('<div/>').addClass("col-md-4");
-    const image = $('<img/>').addClass("img-fluid rounded-start").attr("src", book.img);
+    const image = $('<img/>').addClass("img-fluid rounded-start").attr("src", book.image);
     const secondRowDiv = $('<div/>').addClass("col-md-6");
     const cardBody = $('<div/>').addClass("card-body");
     const author = $('<h5/>').addClass("card-title").text(book.title);
@@ -141,22 +94,22 @@ function addBooksToCards(books) {
 
 function addBookToSwiper(books) {
   books.allBooks.forEach(book => {
-        const swiperSlide = $('<div/>').addClass("swiper-slide");
-        const colDiv = $('<div/>').addClass('col swiper-col');
-        const mainDiv = $('<div/>').addClass('card swiper-card');
-        const img = $('<img/>').addClass("swiper-img").attr("src", book.img); //random-book-result
-        const cardDiv = $('<div/>').addClass('card-body swiper-card-body');
-        const title = $('<h5/>').addClass('card-title').text(book.title);
-        const author = $('<p/>').addClass('card-text').text(book.author);
+    const swiperSlide = $('<div/>').addClass("swiper-slide");
+    const colDiv = $('<div/>').addClass('col swiper-col');
+    const mainDiv = $('<div/>').addClass('card swiper-card');
+    const img = $('<img/>').addClass("swiper-img").attr("src", book.image); //random-book-result
+    const cardDiv = $('<div/>').addClass('card-body swiper-card-body');
+    const title = $('<h5/>').addClass('card-title').text(book.title);
+    const author = $('<p/>').addClass('card-text').text(book.author);
 
-        cardDiv.append(title);
-        cardDiv.append(author);
-        mainDiv.append(img);
-        mainDiv.append(cardDiv);
-        colDiv.append(mainDiv);
-        swiperSlide.append(colDiv);
+    cardDiv.append(title);
+    cardDiv.append(author);
+    mainDiv.append(img);
+    mainDiv.append(cardDiv);
+    colDiv.append(mainDiv);
+    swiperSlide.append(colDiv);
 
-        $(".swiper-wrapper").append(swiperSlide);
+    $(".swiper-wrapper").append(swiperSlide);
   })
 }
 
@@ -169,26 +122,25 @@ function removeBook(array, book) {
 }
 
 function addCurrentBook(currentBook) {
+
   $("#in-progress h2").text(currentBook[0].title);
   $("#in-progress h3").text(currentBook[0].author);
-  $("#in-progress img").attr("src", currentBook[0].img);
+  $("#in-progress img").attr("src", currentBook[0].image);
 }
 
 function chooseRandomBook(booksList) {
   if (booksList instanceof Set) {
     booksList = Array.from(booksList);
   }
-  console.log(booksList);
+
   var randomNumber = Math.floor(Math.random() * booksList.length);
   var choosenBook = booksList[randomNumber];
-  $(".random-book-result img").attr("src", choosenBook.img);
+  $(".random-book-result img").attr("src", choosenBook.image);
   $(".random-book-result h1").text(choosenBook.author);
   $(".random-book-result h2").text(choosenBook.title);
 }
 
-function onStartUp() {
-  var books = new Books();
-  createBooks(books);
+function load(books) {
   addBooksToCarousel(books.allBooks);
   addCurrentBook(books.inProgress);
   addBooksToCards(books);
@@ -201,19 +153,15 @@ function onStartUp() {
       books.choosenBooks.add(tmpBook);
     } else {
       if (books.choosenBooks.has(tmpBook)) {
-        // removeBook(books.choosenBooks, books.library[index]);
         books.choosenBooks.delete(tmpBook);
       }
     }
     books.choosenBooks.size === 0 ? $(".choose-book-btn").attr("data-bs-target", "#error-modal") :
       $(".choose-book-btn").attr("data-bs-target", "#exampleModalToggle2");
-    console.log(books.choosenBooks);
   });
 
   $(".random-book-btn").click(function() {
     chooseRandomBook(books.library);
-    // books.choosenBooks = [];
-    // $('.btn-check').removeAttr("checked");
   });
 
   $(".choose-book-btn").click(function() {
@@ -224,7 +172,6 @@ function onStartUp() {
 
   $(".facebook-icon").click(function() {
     window.open('https://www.facebook.com/groups/3163101350641339', '_blank');
-    // window.location.href = "https://www.facebook.com/groups/3163101350641339";
   });
 
   $(".discord-icon").click(function() {
@@ -256,4 +203,12 @@ function onStartUp() {
 
     return direction;
   }
+}
+
+function onStartUp() {
+  var books = new Books();
+  fetchLibraryData(books);
+  setTimeout(function() {
+    load(books);
+  }, 1000);
 }
