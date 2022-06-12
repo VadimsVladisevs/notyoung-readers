@@ -10,7 +10,7 @@ app.use(bodyParser.urlencoded({
   extended: true
 }));
 
-mongoose.connect('mongodb+srv://admin:sta08rtdf@notyoung-reader.be5jr.mongodb.net/readersDB');
+// mongoose.connect('mongodb+srv://admin:sta08rtdf@notyoung-reader.be5jr.mongodb.net/readersDB');
 
 app.get("/", function(req, res) {
   res.sendFile(__dirname + "/index.html");
