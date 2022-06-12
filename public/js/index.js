@@ -210,5 +210,5 @@ function onStartUp() {
   fetchLibraryData(books);
   setTimeout(function() {
     load(books);
-  }, 500);
+  }, 300);
 }
