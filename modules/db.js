@@ -46,26 +46,17 @@ function findAllBooks() {
 
 function findBooksByStatus(status) {
   return new Promise(function(resolve, reject) {
-      Book.find({
-        status: status
-      }, function(err, foundBooks) {
-
-        Book.find({
-          status: status
-        }, function(err, foundBooks) {
-
-          if (err) {
-            reject(err);
-          }
-          resolve(foundBooks);
-
-        });
-      })
-    };
-
-  });
-})
+    Book.find({
+      status: status
+    }, function(err, foundBooks) {
+      if (err) {
+        reject(err);
+      }
+      resolve(foundBooks);
+    });
+  })
 };
+
 
 
 module.exports = {
