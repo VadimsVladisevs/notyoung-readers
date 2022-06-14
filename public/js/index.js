@@ -1,7 +1,7 @@
 
 function fetchAllBooks() {
-  return fetch('http://localhost:3000/books').then(response => {
-  // return fetch('https://notyoung-reader.herokuapp.com/books').then(response => {
+  // return fetch('http://localhost:3000/books').then(response => {
+  return fetch('https://notyoung-reader.herokuapp.com/books').then(response => {
     return response.json();
   }).catch(err => {
     console.log(err);
@@ -9,8 +9,8 @@ function fetchAllBooks() {
 }
 
 function fetchBooksByStatus(status) {
-  return fetch(`http://localhost:3000/books?status=${status}`).then(response => {
-  // return fetch(`https://notyoung-reader.herokuapp.com/books?status=${status}`).then(response => {
+  // return fetch(`http://localhost:3000/books?status=${status}`).then(response => {
+  return fetch(`https://notyoung-reader.herokuapp.com/books?status=${status}`).then(response => {
     return response.json();
   }).catch(err => {
     console.log(err);
