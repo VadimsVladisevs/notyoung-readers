@@ -1,3 +1,4 @@
+require('dotenv').config();
 const {
   findAllBooks,
   findBooksByStatus

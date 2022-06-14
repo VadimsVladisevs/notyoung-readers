@@ -1,8 +1,11 @@
+// require('dotenv').config();
 const Promise = require('bluebird');
 const mongoose = Promise.promisifyAll(require('mongoose'));
 
-// mongoose.connect('mongodb+srv://admin:password_1@notyoung-reader.be5jr.mongodb.net/readersDB');
-mongoose.connect('mongodb+srv://admin:sta08rtdf@notyoung-reader.be5jr.mongodb.net/readersDB');
+const user = process.env.DB_USER;
+const password = process.env.DB_PW;
+
+mongoose.connect('mongodb+srv://' + user + ':' + password + '@notyoung-reader.be5jr.mongodb.net/readersDB');
 
 const booksSchema = {
   title: {
@@ -44,13 +47,16 @@ function findAllBooks() {
 
 function findBooksByStatus(status) {
   return new Promise(function(resolve, reject) {
-    Book.find({status: status}, function(err, foundBooks) {
+    Book.find({
+      status: status
+    }, function(err, foundBooks) {
       if (err) {
         reject(err);
       }
       resolve(foundBooks);
-  });
-})};
+    });
+  })
+};
 
 module.exports = {
   findAllBooks,
