@@ -1,4 +1,3 @@
-// require('dotenv').config();
 const Promise = require('bluebird');
 const mongoose = Promise.promisifyAll(require('mongoose'));
 
@@ -47,16 +46,25 @@ function findAllBooks() {
 
 function findBooksByStatus(status) {
   return new Promise(function(resolve, reject) {
+<<<<<<< HEAD
     Book.find({
       status: status
     }, function(err, foundBooks) {
+=======
+    Book.find({status: status}, function(err, foundBooks) {
+>>>>>>> 72bb417ad763a0638fcdaca81a3f2542b6021155
       if (err) {
         reject(err);
       }
       resolve(foundBooks);
+<<<<<<< HEAD
     });
   })
 };
+=======
+  });
+})};
+>>>>>>> 72bb417ad763a0638fcdaca81a3f2542b6021155
 
 module.exports = {
   findAllBooks,

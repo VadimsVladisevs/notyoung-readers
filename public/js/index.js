@@ -1,6 +1,10 @@
 
 function fetchAllBooks() {
+<<<<<<< HEAD
   return fetch('http://localhost:3000/books').then(response => {
+=======
+  return fetch('https://notyoung-reader.herokuapp.com/books').then(response => {
+>>>>>>> 72bb417ad763a0638fcdaca81a3f2542b6021155
     return response.json();
   }).catch(err => {
     console.log(err);
@@ -8,7 +12,11 @@ function fetchAllBooks() {
 }
 
 function fetchBooksByStatus(status) {
+<<<<<<< HEAD
   return fetch(`http://localhost:3000/books?status=${status}`).then(response => {
+=======
+  return fetch(`https://notyoung-reader.herokuapp.com/books?status=${status}`).then(response => {
+>>>>>>> 72bb417ad763a0638fcdaca81a3f2542b6021155
     return response.json();
   }).catch(err => {
     console.log(err);
@@ -210,5 +218,9 @@ function onStartUp() {
   fetchLibraryData(books);
   setTimeout(function() {
     load(books);
+<<<<<<< HEAD
   }, 1000);
+=======
+  }, 300);
+>>>>>>> 72bb417ad763a0638fcdaca81a3f2542b6021155
 }
