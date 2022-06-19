@@ -162,4 +162,10 @@ h5 {
 
 .featurette-desc {
   text-align: left;
+  font-family: 'Lobster';
+  line-height: 2rem;
+}
+
+.finished-rating {
+  font-weight: bold;
 }

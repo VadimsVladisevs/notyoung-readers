@@ -115,19 +115,10 @@ function addBookToSwiper(books) {
   })
 }
 
-function removeBook(array, book) {
-  for (var i = 0; i < array.length; i++) {
-    if (array[i] === book) {
-      array.splice(i, 1);
-    }
-  }
-}
-
 function addCurrentBook(currentBook) {
-
-  $("#in-progress h2").text(currentBook[0].title);
-  $("#in-progress h3").text(currentBook[0].author);
-  $("#in-progress img").attr("src", currentBook[0].image);
+  $(".progress-book").text(currentBook.author + ". " + currentBook.title);
+  $(".progress-wiki").text(currentBook.wiki);
+  $(".progress-image").attr("src", currentBook.image);
 }
 
 function chooseRandomBook(booksList) {
@@ -142,9 +133,42 @@ function chooseRandomBook(booksList) {
   $(".random-book-result h2").text(choosenBook.title);
 }
 
+function addFinishedBooks(finishedBooks) {
+  var bookOrder = 0;
+  finishedBooks.forEach(book => {
+    const divider = $('<hr/>').addClass("featurette-divider");
+    const rowlDiv = $('<div/>').addClass('row featurette');
+    var colDiv;
+    var imgDiv;
+    if (bookOrder % 2 === 0) {
+        colDiv = $('<div/>').addClass('col-md-7 order-md-2');
+        imgDiv = $('<div/>').addClass('col-md-5 order-md-1');
+    } else {
+        colDiv = $('<div/>').addClass('col-md-7');
+        imgDiv = $('<div/>').addClass('col-md-5');
+    }
+
+    const title = $('<h2/>').addClass("featurette-heading").text(book.title + ". " + book.author); //random-book-result
+    const desc = $('<p/>').addClass('lead featurette-desc').text(book.wiki);
+    const rating = $('<p/>').addClass('lead featurette-desc finished-rating').text("Оценка клуба - " + book.rating);
+    const img = $('<img/>').addClass('bd-placeholder-img bd-placeholder-img-lg featurette-image img-fluid mx-auto').attr('width', 400).attr('height', 400).attr('src', book.image).attr('preserveAspectRatio', 'xMidYMid slice').attr("focusable", false);
+
+    colDiv.append(title);
+    colDiv.append(desc);
+    colDiv.append(rating);
+    imgDiv.append(img);
+    rowlDiv.append(colDiv);
+    rowlDiv.append(imgDiv);
+
+    $("#finished-books").append(divider).append(rowlDiv);
+    bookOrder += 1;
+  });
+}
+
 function load(books) {
   addBooksToCarousel(books.allBooks);
-  addCurrentBook(books.inProgress);
+  addCurrentBook(books.inProgress[0]);
+  addFinishedBooks(books.finishedBooks);
   addBooksToCards(books);
   addBookToSwiper(books);
 
@@ -212,5 +236,5 @@ function onStartUp() {
   fetchLibraryData(books);
   setTimeout(function() {
     load(books);
-  }, 300);
+  }, 500);
 }
