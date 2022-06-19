@@ -182,8 +182,13 @@ function load(books) {
         books.choosenBooks.delete(tmpBook);
       }
     }
-    books.choosenBooks.size === 0 ? $(".choose-book-btn").attr("data-bs-target", "#error-modal") :
+
+    var choosenBookCount = books.choosenBooks.size;
+
+    choosenBookCount === 0 ? $(".choose-book-btn").attr("data-bs-target", "#error-modal") :
       $(".choose-book-btn").attr("data-bs-target", "#exampleModalToggle2");
+
+    $(".choosen-book-count").text(choosenBookCount);
   });
 
   $(".random-book-btn").click(function() {
@@ -236,5 +241,6 @@ function onStartUp() {
   fetchLibraryData(books);
   setTimeout(function() {
     load(books);
-  }, 500);
+  // }, 2000);
+  }, 700);
 }
