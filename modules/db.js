@@ -5,6 +5,7 @@ const user = process.env.DB_USER;
 const password = process.env.DB_PW;
 
 mongoose.connect('mongodb+srv://' + user + ':' + password + '@notyoung-reader.be5jr.mongodb.net/readersDB');
+// mongoose.connect('mongodb://localhost:27017/readersDB');
 
 const booksSchema = {
   title: {
@@ -57,9 +58,27 @@ function findBooksByStatus(status) {
   })
 };
 
+function finishBook(book) {
+  return new Promise(function(resolve, reject) {
+    Book.updateOne({_id: book._id}, {$set: {rating: book.rating, status: "finished"}}, function(err) {
+      err ? reject(err) : resolve("ok");
+      // mongoose.connection.close();
+    });
+  })
+}
 
+function startBook(book) {
+  return new Promise(function(resolve, reject) {
+    Book.updateOne({_id: book._id}, {status: "progress"}, function(err) {
+      err ? reject(err) : resolve("ok");
+      // mongoose.connection.close();
+    });
+  })
+}
 
 module.exports = {
   findAllBooks,
-  findBooksByStatus
+  findBooksByStatus,
+  finishBook,
+  startBook
 };

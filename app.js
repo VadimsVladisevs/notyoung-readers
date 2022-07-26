@@ -1,8 +1,5 @@
 require('dotenv').config();
-const {
-  findAllBooks,
-  findBooksByStatus
-} = require('./modules/db.js');
+const db = require('./modules/db.js');
 
 const fs = require('node:fs/promises');
 
@@ -16,26 +13,51 @@ app.set('view engine', 'ejs');
 
 app.use(express.static("public"));
 
-app.use(bodyParser.urlencoded({
-  extended: true
-}));
+// app.use(bodyParser.urlencoded({
+//   extended: true
+// }));
+app.use(bodyParser.json());
 
 app.get('/books', function(req, res) {
   const status = req.query.status;
 
   if (status) {
-    findBooksByStatus(status).then(function(foundBooks) {
+    db.findBooksByStatus(status).then(function(foundBooks) {
       res.send(foundBooks);
     }).catch(function(err) {
       res.send(err);
     });
   } else {
-    findAllBooks().then(function(foundBooks) {
+    db.findAllBooks().then(function(foundBooks) {
       res.send(foundBooks);
     }).catch(function(err) {
       res.send(err);
     });
   }
+});
+
+app.post('/', function(req, res) {
+  res.redirect('/');
+});
+
+app.post('/finish', function(req, res) {
+  const book = req.body;
+
+  db.finishBook(book).then(function(result) {
+    res.send({result: result});
+  }).catch(function(err) {
+    res.send(err);
+  });
+});
+
+app.post('/start', function(req, res) {
+  const book = req.body;
+  
+  db.startBook(book).then(function(result) {
+    res.send({result: result});
+  }).catch(function(err) {
+    res.send(err);
+  });
 });
 
 app.get("/", function(req, res) {

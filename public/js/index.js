@@ -1,4 +1,3 @@
-
 function fetchAllBooks() {
   // return fetch('http://localhost:3000/books').then(response => {
   return fetch('https://notyoung-reader.herokuapp.com/books').then(response => {
@@ -17,6 +16,38 @@ function fetchBooksByStatus(status) {
   });
 }
 
+function finishCurrentBook(book) {
+  // return fetch(`http://localhost:3000/finish`, {
+  return fetch(`https://notyoung-reader.herokuapp.com/finish`, {
+    method: 'POST',
+    headers: {
+      'Accept': 'application/json',
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify(book)
+  }).then(response => {
+    return response.json();
+  }).catch(err => {
+    console.log(err);
+  });
+}
+
+function setNewBook(book) {
+  // return fetch(`http://localhost:3000/start`, {
+  return fetch(`https://notyoung-reader.herokuapp.com/start`, {
+    method: 'POST',
+    headers: {
+      'Accept': 'application/json',
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify(book)
+  }).then(response => {
+    return response.json();
+  }).catch(err => {
+    console.log(err);
+  });
+}
+
 function fetchLibraryData(books) {
   fetchAllBooks().then((foundBooks) => {
     books.allBooks = foundBooks;
@@ -28,6 +59,7 @@ function fetchLibraryData(books) {
 
   fetchBooksByStatus(books.PROGRESS).then((foundBooks) => {
     books.inProgress = foundBooks;
+    books.currentBook = books.inProgress[0];
   });
 
   fetchBooksByStatus(books.NEW).then((foundBooks) => {
@@ -41,6 +73,8 @@ function Books() {
   this.inProgress = [];
   this.allBooks = [];
   this.choosenBooks = new Set();
+  this.currentBook = {};
+  this.newBook = {};
   this.FINISHED = "finished";
   this.PROGRESS = "progress";
   this.NEW = "new";
@@ -131,6 +165,7 @@ function chooseRandomBook(booksList) {
   $(".random-book-result img").attr("src", choosenBook.image);
   $(".random-book-result h1").text(choosenBook.author);
   $(".random-book-result h2").text(choosenBook.title);
+  return choosenBook;
 }
 
 function addFinishedBooks(finishedBooks) {
@@ -167,7 +202,7 @@ function addFinishedBooks(finishedBooks) {
 
 function load(books) {
   addBooksToCarousel(books.allBooks);
-  addCurrentBook(books.inProgress[0]);
+  addCurrentBook(books.currentBook);
   addFinishedBooks(books.finishedBooks);
   addBooksToCards(books);
   addBookToSwiper(books);
@@ -192,12 +227,12 @@ function load(books) {
   });
 
   $(".random-book-btn").click(function() {
-    chooseRandomBook(books.library);
+    books.newBook = chooseRandomBook(books.library);
   });
 
   $(".choose-book-btn").click(function() {
     if (books.choosenBooks.size !== 0) {
-      chooseRandomBook(books.choosenBooks);
+      books.newBook = chooseRandomBook(books.choosenBooks);
     }
   });
 
@@ -211,6 +246,27 @@ function load(books) {
 
   $(".fa-image").click(function() {
     window.open('https://miro.com/app/board/uXjVOIQRq2I=/', '_blank');
+  });
+
+
+  $("#approve-btn").click(function() {
+    $("#current-book-rating-label").append(`<strong>${books.currentBook.title}. ${books.currentBook.author}</strong>:`);
+  });
+
+  $("#confirm").submit(function() {
+    var pw = $('input[name=code]').val();
+    if (pw === 'changeit') {
+      books.currentBook.rating = $('input[name=rating]').val();
+      finishCurrentBook(books.currentBook).then(function(res) {
+        if (books.newBook) {
+          setNewBook(books.newBook).then(res => {
+            document.location.reload();
+          });
+        } else {
+          console.log("New book is empty!");
+        }
+      }).catch(err => console.log(err));
+    }
   });
 
   var swiper = new Swiper('.swiper', {
