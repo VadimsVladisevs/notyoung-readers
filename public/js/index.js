@@ -17,8 +17,8 @@ function fetchBooksByStatus(status) {
 }
 
 function finishCurrentBook(book) {
-  // return fetch(`http://localhost:3000/finish`, {
-  return fetch(`https://notyoung-reader.herokuapp.com/finish`, {
+  // return fetch('http://localhost:3000/finish', {
+  return fetch('https://notyoung-reader.herokuapp.com/finish', {
     method: 'POST',
     headers: {
       'Accept': 'application/json',
@@ -32,9 +32,25 @@ function finishCurrentBook(book) {
   });
 }
 
+function checkPassword(pw) {
+  // return fetch('http://localhost:3000/check', {
+    return fetch('https://notyoung-reader.herokuapp.com/check', {
+    method: 'POST',
+    headers: {
+      'Accept': 'application/json',
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({pw: pw})
+  }).then((response) => {
+    return response.json();
+  }).catch(err => {
+    console.log(err);
+  });
+}
+
 function setNewBook(book) {
-  // return fetch(`http://localhost:3000/start`, {
-  return fetch(`https://notyoung-reader.herokuapp.com/start`, {
+  // return fetch('http://localhost:3000/start', {
+  return fetch('https://notyoung-reader.herokuapp.com/start', {
     method: 'POST',
     headers: {
       'Accept': 'application/json',
@@ -253,20 +269,24 @@ function load(books) {
     $("#current-book-rating-label").append(`<strong>${books.currentBook.title}. ${books.currentBook.author}</strong>:`);
   });
 
-  $("#confirm").submit(function() {
+  $("#confirm-btn").click(function() {
     var pw = $('input[name=code]').val();
-    if (pw === 'changeit') {
-      books.currentBook.rating = $('input[name=rating]').val();
-      finishCurrentBook(books.currentBook).then(function(res) {
+    var rating = $('input[name=rating]').val();
+    checkPassword(pw).then(result => {
+      if (result.result) {
+        books.currentBook.rating = rating;
+        finishCurrentBook(books.currentBook).catch(err => console.log(err));;
+
         if (books.newBook) {
           setNewBook(books.newBook).then(res => {
-            document.location.reload();
-          });
-        } else {
-          console.log("New book is empty!");
+
+            if (res.result === 'ok') {
+              document.location.reload();
+            }
+          }).catch(err => console.log(err));
         }
-      }).catch(err => console.log(err));
-    }
+      }
+    });
   });
 
   var swiper = new Swiper('.swiper', {

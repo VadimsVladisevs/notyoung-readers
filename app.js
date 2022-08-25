@@ -1,4 +1,5 @@
 require('dotenv').config();
+const bcrypt = require('bcrypt');
 const db = require('./modules/db.js');
 
 const fs = require('node:fs/promises');
@@ -52,12 +53,20 @@ app.post('/finish', function(req, res) {
 
 app.post('/start', function(req, res) {
   const book = req.body;
-  
   db.startBook(book).then(function(result) {
     res.send({result: result});
+    // res.redirect('/');
   }).catch(function(err) {
     res.send(err);
   });
+});
+
+app.post('/check', function(req, res) {
+  var saltRounds = 10;
+  var pw = req.body.pw;
+  var myPw = "$2b$10$kVdazpXUBvuWjCtTn3dePeSrbkDXfX9PUT77aYHISvnJQgObp9rpG";
+  var result = bcrypt.compareSync(pw, myPw);
+  res.send({result: result});
 });
 
 app.get("/", function(req, res) {
