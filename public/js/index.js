@@ -1,85 +1,73 @@
-function fetchAllBooks() {
-  // return fetch('http://localhost:3000/books').then(response => {
-  return fetch('https://notyoung-reader.herokuapp.com/books').then(response => {
-    return response.json();
-  }).catch(err => {
-    console.log(err);
-  });
+
+async function fetchAllBooks() {
+  const [allBooksResponse, finishedResponse, newResponse, progressResponse] = await Promise.all([
+    // fetch('http://localhost:3000/books'),
+    // fetch('http://localhost:3000/books?status=finished'),
+    // fetch('http://localhost:3000/books?status=new'),
+    // fetch('http://localhost:3000/books?status=progress')
+    fetch('https://notyoung-reader.herokuapp.com/books'),
+    fetch('https://notyoung-reader.herokuapp.com/books?status=finished'),
+    fetch('https://notyoung-reader.herokuapp.com/books?status=new'),
+    fetch('https://notyoung-reader.herokuapp.com/books?status=progress')
+  ]);
+  const allBooks = await allBooksResponse.json();
+  const finishedBooks = await finishedResponse.json();
+  const newBooks = await newResponse.json();
+  const progressBooks = await progressResponse.json();
+  return [allBooks, finishedBooks, newBooks, progressBooks];
 }
 
-function fetchBooksByStatus(status) {
-  // return fetch(`http://localhost:3000/books?status=${status}`).then(response => {
-  return fetch(`https://notyoung-reader.herokuapp.com/books?status=${status}`).then(response => {
-    return response.json();
-  }).catch(err => {
-    console.log(err);
-  });
+async function finishAndSetBook(finishedBook, newBook) {
+  const [finishResponse, setResponse] = await Promise.all([
+    // fetch('http://localhost:3000/finish', {
+    fetch('https://notyoung-reader.herokuapp.com/finish', {
+      method: 'POST',
+      headers: {
+        'Accept': 'application/json',
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(finishedBook)
+    }),
+    // fetch('http://localhost:3000/start', {
+    fetch('https://notyoung-reader.herokuapp.com/start', {
+      method: 'POST',
+      headers: {
+        'Accept': 'application/json',
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(newBook)
+    })
+  ]);
+  const finish = await finishResponse.json();
+  const set = await setResponse.json();
+  return [finish, set];
 }
 
-function finishCurrentBook(book) {
-  // return fetch('http://localhost:3000/finish', {
-  return fetch('https://notyoung-reader.herokuapp.com/finish', {
-    method: 'POST',
-    headers: {
-      'Accept': 'application/json',
-      'Content-Type': 'application/json'
-    },
-    body: JSON.stringify(book)
-  }).then(response => {
-    return response.json();
-  }).catch(err => {
-    console.log(err);
-  });
+async function checkPassword(pw) {
+  const checkResponse = await Promise.resolve(
+    // fetch('http://localhost:3000/check', {
+      fetch('https://notyoung-reader.herokuapp.com/check', {
+      method: 'POST',
+      headers: {
+        'Accept': 'application/json',
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({pw: pw})
+    })
+  );
+  const checkResult = await checkResponse.json();
+  return checkResult;
 }
 
-function checkPassword(pw) {
-  // return fetch('http://localhost:3000/check', {
-    return fetch('https://notyoung-reader.herokuapp.com/check', {
-    method: 'POST',
-    headers: {
-      'Accept': 'application/json',
-      'Content-Type': 'application/json'
-    },
-    body: JSON.stringify({pw: pw})
-  }).then((response) => {
-    return response.json();
-  }).catch(err => {
-    console.log(err);
-  });
-}
+function fetchAndLoadLibraryData(books) {
+  fetchAllBooks().then(([allBooks, finishedBooks, newBooks, progressBooks]) => {
+    books.allBooks = allBooks;
+    books.finishedBooks = finishedBooks.reverse();
+    books.library = newBooks;
+    books.currentBook = progressBooks[0];
+    books.inProgress = progressBooks;
 
-function setNewBook(book) {
-  // return fetch('http://localhost:3000/start', {
-  return fetch('https://notyoung-reader.herokuapp.com/start', {
-    method: 'POST',
-    headers: {
-      'Accept': 'application/json',
-      'Content-Type': 'application/json'
-    },
-    body: JSON.stringify(book)
-  }).then(response => {
-    return response.json();
-  }).catch(err => {
-    console.log(err);
-  });
-}
-
-function fetchLibraryData(books) {
-  fetchAllBooks().then((foundBooks) => {
-    books.allBooks = foundBooks;
-  });
-
-  fetchBooksByStatus(books.FINISHED).then((foundBooks) => {
-    books.finishedBooks = foundBooks;
-  });
-
-  fetchBooksByStatus(books.PROGRESS).then((foundBooks) => {
-    books.inProgress = foundBooks;
-    books.currentBook = books.inProgress[0];
-  });
-
-  fetchBooksByStatus(books.NEW).then((foundBooks) => {
-    books.library = foundBooks;
+    load(books);
   });
 }
 
@@ -272,19 +260,12 @@ function load(books) {
   $("#confirm-btn").click(function() {
     var pw = $('input[name=code]').val();
     var rating = $('input[name=rating]').val();
-    checkPassword(pw).then(result => {
-      if (result.result) {
+    checkPassword(pw).then(checkResult => {
+      if (checkResult.result) {
         books.currentBook.rating = rating;
-        finishCurrentBook(books.currentBook).catch(err => console.log(err));;
-
-        if (books.newBook) {
-          setNewBook(books.newBook).then(res => {
-
-            if (res.result === 'ok') {
-              document.location.reload();
-            }
-          }).catch(err => console.log(err));
-        }
+        finishAndSetBook(books.currentBook, books.newBook).then(([finish, set]) => {
+          document.location.reload();
+        });
       }
     });
   });
@@ -314,9 +295,5 @@ function load(books) {
 
 function onStartUp() {
   var books = new Books();
-  fetchLibraryData(books);
-  setTimeout(function() {
-    load(books);
-  // }, 2000);
-  }, 700);
+  fetchAndLoadLibraryData(books);
 }

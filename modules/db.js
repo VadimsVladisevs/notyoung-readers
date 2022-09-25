@@ -1,6 +1,6 @@
 const Promise = require('bluebird');
 const mongoose = Promise.promisifyAll(require('mongoose'));
-
+var _ = require('underscore');
 const user = process.env.DB_USER;
 const password = process.env.DB_PW;
 
@@ -53,7 +53,8 @@ function findBooksByStatus(status) {
       if (err) {
         reject(err);
       }
-      resolve(foundBooks);
+
+      status === 'finished' ? resolve(_.sortBy(foundBooks, 'rating')) : resolve(foundBooks);
     });
   })
 };
