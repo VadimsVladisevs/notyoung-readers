@@ -34,6 +34,23 @@ const booksSchema = {
 
 const Book = mongoose.model('Book', booksSchema);
 
+function addBook(book) {
+  const newBook = new Book(book);
+  return new Promise(function(resolve, reject) {
+    newBook.save(book, function(err) {
+      err ? reject(err) : resolve("ok");
+    })
+  });
+};
+
+function deleteByTitle(title) {
+  return new Promise(function(resolve, reject) {
+    Book.deleteOne({title: title}, function(err) {
+      err ? reject(err) : resolve("ok");
+    });
+  });
+};
+
 function findAllBooks() {
   return new Promise(function(resolve, reject) {
     Book.find(function(err, foundBooks) {
@@ -43,7 +60,7 @@ function findAllBooks() {
       resolve(foundBooks);
     });
   });
-}
+};
 
 function findBooksByStatus(status) {
   return new Promise(function(resolve, reject) {
@@ -81,5 +98,7 @@ module.exports = {
   findAllBooks,
   findBooksByStatus,
   finishBook,
-  startBook
+  startBook,
+  addBook,
+  deleteByTitle
 };

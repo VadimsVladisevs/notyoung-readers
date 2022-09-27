@@ -61,6 +61,24 @@ app.post('/start', function(req, res) {
   });
 });
 
+app.post('/addbook', function(req, res) {
+  const book = req.body;
+  db.addBook(book).then(result => {
+    res.send({result: result});
+  }).catch(err => {
+    res.send(err);
+  });
+});
+
+app.delete('/deletebook', function(req, res) {
+  const title = req.body.title;
+  db.deleteByTitle(title).then(result => {
+    res.send({result: result})
+  }).catch(err => {
+    res.send(err);
+  });
+});
+
 app.post('/check', function(req, res) {
   var saltRounds = 10;
   var pw = req.body.pw;
