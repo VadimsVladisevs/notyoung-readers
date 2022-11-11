@@ -37,16 +37,17 @@ const Book = mongoose.model('Book', booksSchema);
 function addBook(book) {
   const newBook = new Book(book);
   return new Promise(function(resolve, reject) {
-    newBook.save(book, function(err) {
-      err ? reject(err) : resolve("ok");
-    })
+    newBook.save(book, function(err, savedBook) {
+      err ? reject(err) : resolve(savedBook);
+    });
   });
 };
 
 function deleteByTitle(title) {
   return new Promise(function(resolve, reject) {
-    Book.deleteOne({title: title}, function(err) {
-      err ? reject(err) : resolve("ok");
+    Book.deleteOne({title: title}, function(err, deletedBook) {
+      err ? reject(err) : deletedBook.deletedCount === 0 ?
+        resolve("Book not found") : resolve("Book deleted");
     });
   });
 };

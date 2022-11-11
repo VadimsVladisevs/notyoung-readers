@@ -45,7 +45,9 @@ app.post('/finish', function(req, res) {
   const book = req.body;
 
   db.finishBook(book).then(function(result) {
-    res.send({result: result});
+    res.send({
+      result: result
+    });
   }).catch(function(err) {
     res.send(err);
   });
@@ -54,7 +56,9 @@ app.post('/finish', function(req, res) {
 app.post('/start', function(req, res) {
   const book = req.body;
   db.startBook(book).then(function(result) {
-    res.send({result: result});
+    res.send({
+      result: result
+    });
     // res.redirect('/');
   }).catch(function(err) {
     res.send(err);
@@ -64,7 +68,7 @@ app.post('/start', function(req, res) {
 app.post('/addbook', function(req, res) {
   const book = req.body;
   db.addBook(book).then(result => {
-    res.send({result: result});
+    res.send(result);
   }).catch(err => {
     res.send(err);
   });
@@ -73,7 +77,9 @@ app.post('/addbook', function(req, res) {
 app.delete('/deletebook', function(req, res) {
   const title = req.body.title;
   db.deleteByTitle(title).then(result => {
-    res.send({result: result})
+    res.send({
+      result: result
+    })
   }).catch(err => {
     res.send(err);
   });
@@ -84,7 +90,9 @@ app.post('/check', function(req, res) {
   var pw = req.body.pw;
   var myPw = "$2b$10$kVdazpXUBvuWjCtTn3dePeSrbkDXfX9PUT77aYHISvnJQgObp9rpG";
   var result = bcrypt.compareSync(pw, myPw);
-  res.send({result: result});
+  res.send({
+    result: result
+  });
 });
 
 app.get("/", function(req, res) {

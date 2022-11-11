@@ -43,7 +43,9 @@ async function finishAndSetBook(finishedBook, newBook) {
   return [finish, set];
 }
 
+
 async function checkPassword(pw) {
+
   const checkResponse = await Promise.resolve(
     // fetch('http://localhost:3000/check', {
       fetch('https://notyoung-reader.herokuapp.com/check', {

@@ -121,12 +121,15 @@ h5 {
 .swiper-card-body {
   border-top-style: solid;
   border-width: thin;
+  height: 110px;
+  width: 180px;
+  margin-left: 10px;
 }
 
-/* .swiper-slide {
-  height: 100px;
-  width: 50px;
-} */
+/* .swiper-slide { */
+  /* height: 100px; */
+  /* width: 50%; */
+/* } */
 
 .featurette-divider {
   margin: 5rem 0; /* Space out the Bootstrap <hr> more */
