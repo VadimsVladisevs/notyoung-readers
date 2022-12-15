@@ -24,7 +24,7 @@
     "express": "^4.17.3",
     "https": "^1.0.0",
     "mongoose": "^6.3.5",
-    "multer": "^1.4.5-lts.1",
+    "nodejs": "^0.0.0",
     "nodemon": "^2.0.20",
     "underscore": "^1.13.6",
     "uniq": "^1.0.1"

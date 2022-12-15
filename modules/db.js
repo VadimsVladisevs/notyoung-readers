@@ -25,6 +25,10 @@ const booksSchema = {
     required: [true, "Please check your data entry, no status specified!"]
   },
   wiki: String,
+  tag: {
+    type: String,
+    required: [true, "Please check your data entry, no tag specified!"]
+  },
   rating: {
     type: Number,
     minimum: 0,
