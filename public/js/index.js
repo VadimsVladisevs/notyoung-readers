@@ -5,10 +5,14 @@ async function fetchAllBooks() {
     // fetch('http://localhost:3000/books?status=finished'),
     // fetch('http://localhost:3000/books?status=new'),
     // fetch('http://localhost:3000/books?status=progress')
-    fetch('https://notyoung-reader.herokuapp.com/books'),
-    fetch('https://notyoung-reader.herokuapp.com/books?status=finished'),
-    fetch('https://notyoung-reader.herokuapp.com/books?status=new'),
-    fetch('https://notyoung-reader.herokuapp.com/books?status=progress')
+    fetch('https://notyoung-reader.onrender.com/books'),
+    fetch('https://notyoung-reader.onrender.com/books?status=finished'),
+    fetch('https://notyoung-reader.onrender.com/books?status=new'),
+    fetch('https://notyoung-reader.onrender.com/books?status=progress')
+    // fetch('https://notyoung-reader.herokuapp.com/books'),
+    // fetch('https://notyoung-reader.herokuapp.com/books?status=finished'),
+    // fetch('https://notyoung-reader.herokuapp.com/books?status=new'),
+    // fetch('https://notyoung-reader.herokuapp.com/books?status=progress')
   ]);
   const allBooks = await allBooksResponse.json();
   const finishedBooks = await finishedResponse.json();
@@ -20,7 +24,8 @@ async function fetchAllBooks() {
 async function finishAndSetBook(finishedBook, newBook) {
   const [finishResponse, setResponse] = await Promise.all([
     // fetch('http://localhost:3000/finish', {
-    fetch('https://notyoung-reader.herokuapp.com/finish', {
+      fetch('https://notyoung-reader.onrender.com', {
+    // fetch('https://notyoung-reader.herokuapp.com/finish', {
       method: 'POST',
       headers: {
         'Accept': 'application/json',
@@ -28,8 +33,9 @@ async function finishAndSetBook(finishedBook, newBook) {
       },
       body: JSON.stringify(finishedBook)
     }),
+    fetch('https://notyoung-reader.onrender.com/start', {
     // fetch('http://localhost:3000/start', {
-    fetch('https://notyoung-reader.herokuapp.com/start', {
+    // fetch('https://notyoung-reader.herokuapp.com/start', {
       method: 'POST',
       headers: {
         'Accept': 'application/json',
@@ -47,8 +53,9 @@ async function finishAndSetBook(finishedBook, newBook) {
 async function checkPassword(pw) {
 
   const checkResponse = await Promise.resolve(
+    fetch('https://notyoung-reader.onrender.com/check', {
     // fetch('http://localhost:3000/check', {
-      fetch('https://notyoung-reader.herokuapp.com/check', {
+      // fetch('https://notyoung-reader.herokuapp.com/check', {
       method: 'POST',
       headers: {
         'Accept': 'application/json',
@@ -112,7 +119,7 @@ function addBooksToCards(books) {
     const colDiv = $('<div/>').addClass("col-md-4");
     const image = $('<img/>').addClass("img-fluid rounded-start").attr("src", book.image);
     const secondRowDiv = $('<div/>').addClass("col-md-6");
-    const cardBody = $('<div/>').addClass("card-body");
+    const cardBody = $('<div/>').addClass("card-body " + book.tag);
     const author = $('<h5/>').addClass("card-title").text(book.title);
     const title = $('<p/>').addClass("card-text").text(book.author);
     const input = $('<input/>').addClass("btn-check").attr("type", "checkbox").attr("id", btnId).attr("autocomplete", "off");
@@ -298,4 +305,17 @@ function load(books) {
 function onStartUp() {
   var books = new Books();
   fetchAndLoadLibraryData(books);
+}
+
+function myFunction() {
+  var filter = document.getElementById("myFilter").value.toUpperCase();
+  var cards = document.getElementById("myCards").getElementsByClassName("card");
+  var classes;
+  for (i = 0; i < cards.length; i++) {
+      if (cards[i].querySelector(".card-body").className.toUpperCase().indexOf(filter) > -1) {
+          cards[i].style.display = "";
+      } else {
+          cards[i].style.display = "none";
+      }
+  }
 }
