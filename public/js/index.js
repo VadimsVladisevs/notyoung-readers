@@ -24,7 +24,7 @@ async function fetchAllBooks() {
 async function finishAndSetBook(finishedBook, newBook) {
   const [finishResponse, setResponse] = await Promise.all([
     // fetch('http://localhost:3000/finish', {
-      fetch('https://notyoung-reader.onrender.com', {
+      fetch('https://notyoung-reader.onrender.com/finish', {
     // fetch('https://notyoung-reader.herokuapp.com/finish', {
       method: 'POST',
       headers: {
