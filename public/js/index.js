@@ -26,7 +26,7 @@ async function finishAndSetBook(finishedBook, newBook) {
       },
       body: JSON.stringify(finishedBook)
     }),
-    fetch(HOST_URL.concat('start'), {
+    fetch(HOST_URL.concat('/start'), {
       method: 'POST',
       headers: {
         'Accept': 'application/json',
@@ -44,7 +44,7 @@ async function finishAndSetBook(finishedBook, newBook) {
 async function checkPassword(pw) {
 
   const checkResponse = await Promise.resolve(
-    fetch(hostUrl.concat('/check'), {
+    fetch(HOST_URL.concat('/check'), {
       method: 'POST',
       headers: {
         'Accept': 'application/json',
@@ -256,16 +256,20 @@ function load(books) {
   });
 
   $("#confirm-btn").click(function() {
+    
     var pw = $('input[name=code]').val();
-    var rating = $('input[name=rating]').val();
     checkPassword(pw).then(checkResult => {
-      if (checkResult.result) {
-        books.currentBook.rating = rating;
+      if (checkResult.result == true) {
+        books.currentBook.rating = $('input[name=rating]').val();
         finishAndSetBook(books.currentBook, books.newBook).then(([finish, set]) => {
           document.location.reload();
         });
+      } else {
+        alert('Неправильный пароль!');
       }
     });
+
+    return false;
   });
 
   var swiper = new Swiper('.swiper', {
