@@ -1,11 +1,9 @@
+const { DB_URL } = require('../constants');
 const Promise = require('bluebird');
 const mongoose = Promise.promisifyAll(require('mongoose'));
 var _ = require('underscore');
-const user = process.env.DB_USER;
-const password = process.env.DB_PW;
 
-mongoose.connect('mongodb+srv://' + user + ':' + password + '@notyoung-reader.be5jr.mongodb.net/readersDB');
-// mongoose.connect('mongodb://localhost:27017/readersDB');
+mongoose.connect(DB_URL);
 
 const booksSchema = {
   title: {
