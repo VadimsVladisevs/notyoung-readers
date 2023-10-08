@@ -1,6 +1,5 @@
-const HOST_URL = 'http://localhost:3000';
-// const HOST_URL = 'https://notyoung-reader.onrender.com';
-// const HOST_URL = 'https://notyoung-reader.herokuapp.com';
+// const HOST_URL = 'http://localhost:3000';
+const HOST_URL = 'https://notyoung-reader.onrender.com';
 
 async function fetchAllBooks() {
   const [allBooksResponse, finishedResponse, newResponse, progressResponse] = await Promise.all([
