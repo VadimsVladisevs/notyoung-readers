@@ -1,18 +1,13 @@
+// const HOST_URL = 'http://localhost:3000';
+const HOST_URL = 'https://notyoung-reader.onrender.com';
+// const HOST_URL = 'https://notyoung-reader.herokuapp.com';
 
 async function fetchAllBooks() {
   const [allBooksResponse, finishedResponse, newResponse, progressResponse] = await Promise.all([
-    // fetch('http://localhost:3000/books'),
-    // fetch('http://localhost:3000/books?status=finished'),
-    // fetch('http://localhost:3000/books?status=new'),
-    // fetch('http://localhost:3000/books?status=progress')
-    fetch('https://notyoung-reader.onrender.com/books'),
-    fetch('https://notyoung-reader.onrender.com/books?status=finished'),
-    fetch('https://notyoung-reader.onrender.com/books?status=new'),
-    fetch('https://notyoung-reader.onrender.com/books?status=progress')
-    // fetch('https://notyoung-reader.herokuapp.com/books'),
-    // fetch('https://notyoung-reader.herokuapp.com/books?status=finished'),
-    // fetch('https://notyoung-reader.herokuapp.com/books?status=new'),
-    // fetch('https://notyoung-reader.herokuapp.com/books?status=progress')
+    fetch(HOST_URL.concat('/books')),
+    fetch(HOST_URL.concat('/books?status=finished')),
+    fetch(HOST_URL.concat('/books?status=new')),
+    fetch(HOST_URL.concat('/books?status=progress'))
   ]);
   const allBooks = await allBooksResponse.json();
   const finishedBooks = await finishedResponse.json();
@@ -23,9 +18,7 @@ async function fetchAllBooks() {
 
 async function finishAndSetBook(finishedBook, newBook) {
   const [finishResponse, setResponse] = await Promise.all([
-    // fetch('http://localhost:3000/finish', {
-      fetch('https://notyoung-reader.onrender.com', {
-    // fetch('https://notyoung-reader.herokuapp.com/finish', {
+    fetch(HOST_URL.concat('/finish'), {
       method: 'POST',
       headers: {
         'Accept': 'application/json',
@@ -33,9 +26,7 @@ async function finishAndSetBook(finishedBook, newBook) {
       },
       body: JSON.stringify(finishedBook)
     }),
-    fetch('https://notyoung-reader.onrender.com/start', {
-    // fetch('http://localhost:3000/start', {
-    // fetch('https://notyoung-reader.herokuapp.com/start', {
+    fetch(HOST_URL.concat('/start'), {
       method: 'POST',
       headers: {
         'Accept': 'application/json',
@@ -53,9 +44,7 @@ async function finishAndSetBook(finishedBook, newBook) {
 async function checkPassword(pw) {
 
   const checkResponse = await Promise.resolve(
-    fetch('https://notyoung-reader.onrender.com/check', {
-    // fetch('http://localhost:3000/check', {
-      // fetch('https://notyoung-reader.herokuapp.com/check', {
+    fetch(HOST_URL.concat('/check'), {
       method: 'POST',
       headers: {
         'Accept': 'application/json',
@@ -182,13 +171,13 @@ function chooseRandomBook(booksList) {
 }
 
 function addFinishedBooks(finishedBooks) {
-  var bookOrder = 0;
+  var bookOrder = 1;
   finishedBooks.forEach(book => {
     const divider = $('<hr/>').addClass("featurette-divider");
     const rowlDiv = $('<div/>').addClass('row featurette');
     var colDiv;
     var imgDiv;
-    if (bookOrder % 2 === 0) {
+    if (bookOrder % 2 !== 0) {
         colDiv = $('<div/>').addClass('col-md-7 order-md-2');
         imgDiv = $('<div/>').addClass('col-md-5 order-md-1');
     } else {
@@ -196,9 +185,9 @@ function addFinishedBooks(finishedBooks) {
         imgDiv = $('<div/>').addClass('col-md-5');
     }
 
-    const title = $('<h2/>').addClass("featurette-heading").text(book.title + ". " + book.author); //random-book-result
+    const title = $('<h2/>').addClass("featurette-heading").text(`${bookOrder}. ${book.title}. ${book.author}`); //random-book-result
     const desc = $('<p/>').addClass('lead featurette-desc').text(book.wiki);
-    const rating = $('<p/>').addClass('lead featurette-desc finished-rating').text("Оценка клуба - " + book.rating);
+    const rating = $('<p/>').addClass('lead featurette-desc finished-rating').text(`Оценка клуба - ${book.rating}`);
     const img = $('<img/>').addClass('bd-placeholder-img bd-placeholder-img-lg featurette-image img-fluid mx-auto').attr('width', 400).attr('height', 400).attr('src', book.image).attr('preserveAspectRatio', 'xMidYMid slice').attr("focusable", false);
 
     colDiv.append(title);
@@ -267,16 +256,20 @@ function load(books) {
   });
 
   $("#confirm-btn").click(function() {
+    
     var pw = $('input[name=code]').val();
-    var rating = $('input[name=rating]').val();
     checkPassword(pw).then(checkResult => {
-      if (checkResult.result) {
-        books.currentBook.rating = rating;
+      if (checkResult.result == true) {
+        books.currentBook.rating = $('input[name=rating]').val();
         finishAndSetBook(books.currentBook, books.newBook).then(([finish, set]) => {
           document.location.reload();
         });
+      } else {
+        alert('Неправильный пароль!');
       }
     });
+
+    return false;
   });
 
   var swiper = new Swiper('.swiper', {
