@@ -86,7 +86,6 @@ app.delete('/deletebook', function(req, res) {
 });
 
 app.post('/check', function(req, res) {
-  var saltRounds = 10;
   var pw = req.body.pw;
   var myPw = "$2b$10$kVdazpXUBvuWjCtTn3dePeSrbkDXfX9PUT77aYHISvnJQgObp9rpG";
   var result = bcrypt.compareSync(pw, myPw);

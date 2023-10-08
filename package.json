@@ -25,7 +25,7 @@
     "https": "^1.0.0",
     "mongoose": "^6.3.5",
     "nodejs": "^0.0.0",
-    "nodemon": "^2.0.20",
+    "nodemon": "^3.0.1",
     "underscore": "^1.13.6",
     "uniq": "^1.0.1"
   }

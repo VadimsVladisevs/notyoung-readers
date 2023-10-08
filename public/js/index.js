@@ -1,5 +1,5 @@
-// const HOST_URL = 'http://localhost:3000';
-const HOST_URL = 'https://notyoung-reader.onrender.com';
+const HOST_URL = 'http://localhost:3000';
+// const HOST_URL = 'https://notyoung-reader.onrender.com';
 // const HOST_URL = 'https://notyoung-reader.herokuapp.com';
 
 async function fetchAllBooks() {
@@ -38,6 +38,75 @@ async function finishAndSetBook(finishedBook, newBook) {
   const finish = await finishResponse.json();
   const set = await setResponse.json();
   return [finish, set];
+}
+
+async function getStatistics(books) {
+  var tags = new Map();
+
+  books.allBooks.forEach(book => {
+    var tag = book['tag'];
+    if (books.NEW === book['status']) {
+      if (!tags.has(tag)) {
+        tags.set(book['tag'], 0);
+      }
+    } else {
+      tags.has(tag) ? tags.set(tag, tags.get(tag) + 1) : tags.set(tag, 1);  
+    }
+  })
+  
+  var sortedTags = new Map([...tags.entries()].sort((a, b) => b[1] - a[1]));
+
+  new Chart(document.getElementById("horizontalBar"), {
+    "type": "horizontalBar",
+    "data": {
+      "labels": Array.from(sortedTags.keys()).map((x) => x[0].toUpperCase() + x.slice(1)),
+      "datasets": [{
+        "data": Array.from(sortedTags.values()),
+        "fill": false,
+        "backgroundColor": fillColors(sortedTags.size),
+      }]
+    },
+    "options": {
+      "plugins": {
+        "legend": false,
+      },
+      "scales": {
+        "xAxes": [{
+          "gridLines": {
+            "drawOnChartArea": false
+          },
+          "ticks": {
+            "beginAtZero": true,
+            "stepSize": 1,
+            "max": sortedTags.values().next().value + 1,
+          }
+        }],
+        "yAxes": [{
+          "gridLines": {
+            "drawOnChartArea": false
+          }
+        }]
+      }
+    }
+  });
+}
+
+function fillColors(size) {
+  var colors = [];
+  for (let i = 0; i < size; i++) {
+    colors.push(getRandomRgba());
+  }
+
+  return colors;
+}
+
+function getRandomRgba() {
+  const randomNumber = (min, max) => Math.floor(Math.random() * (max - min + 1) + min);
+  const randomByte = () => randomNumber(0, 255)
+  const randomPercent = () => (randomNumber(50, 100) * 0.01).toFixed(2)
+  const randomCssRgba = () => `rgba(${[randomByte(), randomByte(), randomByte(), randomPercent()].join(',')})`
+
+  return randomCssRgba();
 }
 
 
@@ -223,7 +292,7 @@ function load(books) {
     var choosenBookCount = books.choosenBooks.size;
 
     choosenBookCount === 0 ? $(".choose-book-btn").attr("data-bs-target", "#error-modal") :
-      $(".choose-book-btn").attr("data-bs-target", "#exampleModalToggle2");
+      $(".choose-book-btn").attr("data-bs-target", "#chooseRandomToggle");
 
     $(".choosen-book-count").text(choosenBookCount);
   });
@@ -231,6 +300,10 @@ function load(books) {
   $(".random-book-btn").click(function() {
     books.newBook = chooseRandomBook(books.library);
   });
+
+  $(".statistics-btn").click(function() {
+    getStatistics(books);    
+  })
 
   $(".choose-book-btn").click(function() {
     if (books.choosenBooks.size !== 0) {

@@ -24,7 +24,8 @@
             <a class="nav-link" aria-current="page" href="#library">Библиотека</a>
             <a class="nav-link" href="#in-progress">Выбранная книга</a>
             <a class="nav-link" href="#finished-books">Прочитанные книжки</a>
-            <a class="nav-link border-md-right choose-btn" data-bs-toggle="modal" href="#exampleModalToggle" role="button">Выбор книги</a>
+            <a class="nav-link choose-btn" data-bs-toggle="modal" href="#chooseBookToggle" role="button">Выбор книги</a>
+            <a class="nav-link border-md-right statistics-btn" href="#statisticsToggle" data-bs-toggle="modal" role="button">Статистика</a>
             <a class="nav-link">Контакты</a>
             <a class="nav-link"><i class="social-icon fab fa-discord discord-icon"></i></a>
             <a class="nav-link"><i class="social-icon fab fa-facebook-f facebook-icon"></i></a>
@@ -70,11 +71,11 @@
   </div>
 
   <section id="book-choose">
-    <div class="modal fade" id="exampleModalToggle" aria-hidden="true" aria-labelledby="exampleModalToggleLabel" tabindex="-1">
+    <div class="modal fade" id="chooseBookToggle" aria-hidden="true" aria-labelledby="chooseBookToggleLabel" tabindex="-1">
       <div class="modal-dialog modal-dialog-centered modal-xl">
         <div class="modal-content">
           <div class="modal-header">
-            <h4 class="modal-title w-100" id="exampleModalToggleLabel">Добавьте книжку в список</h4>
+            <h4 class="modal-title w-100" id="chooseBookToggleLabel">Добавьте книжку в список</h4>
             <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
           </div>
           <!-- Search -->
@@ -88,7 +89,7 @@
           </div>
 
           <div class="modal-footer">
-            <button type="button" class="random-book-btn btn btn-danger" data-bs-target="#exampleModalToggle2" data-bs-toggle="modal">Случайный выбор</button>
+            <button type="button" class="random-book-btn btn btn-danger" data-bs-target="#chooseRandomToggle" data-bs-toggle="modal">Случайный выбор</button>
             <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
             <button class="btn btn-success choose-book-btn position-relative" data-bs-target="#error-modal" data-bs-toggle="modal">Подтвердить
               <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger choosen-book-count">0
@@ -98,7 +99,7 @@
         </div>
       </div>
     </div>
-    <div class="modal fade" id="exampleModalToggle2" aria-hidden="true" aria-labelledby="exampleModalToggleLabel2" tabindex="-1">
+    <div class="modal fade" id="chooseRandomToggle" aria-hidden="true" aria-labelledby="chooseRandomToggleLabel" tabindex="-1">
       <div class="modal-dialog modal-dialog-centered modal-lg">
         <div class="modal-content">
           <div class="modal-header">
@@ -135,15 +136,29 @@
         </div>
       </div>
     </div>
-    <div class="modal fade" id="error-modal" aria-hidden="true" aria-labelledby="exampleModalToggleLabel2" tabindex="-1">
+    <div class="modal fade" id="error-modal" aria-hidden="true" aria-labelledby="chooseRandomToggleLabel" tabindex="-1">
       <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content">
           <div class="modal-header">
-            <h5 class="modal-title" id="exampleModalToggleLabel2">Ошибка</h5>
+            <h5 class="modal-title" id="chooseRandomToggleLabel">Ошибка</h5>
             <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
           </div>
           <div class="modal-body">
             <h4>Добавьте книжки для выбора</h4>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="modal fade" id="statisticsToggle" aria-hidden="true" aria-labelledby="statisticsToggleLabel" tabindex="-1">
+      <div class="modal-dialog modal-dialog-centered modal-xl">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h4 class="modal-title w-100" id="statisticsToggleLabel">Статистика</h4>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+          
+          <div class="row" id="statistics">
+            <canvas id="horizontalBar"></canvas>
           </div>
         </div>
       </div>
@@ -159,6 +174,7 @@
   <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
   <script src="js/index.js" charset="utf-8"></script>
   <script src="https://unpkg.com/swiper@8/swiper-bundle.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.9.4/Chart.js"></script>
 </body>
 
 </html>

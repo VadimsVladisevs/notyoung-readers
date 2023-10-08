@@ -5,7 +5,7 @@ var _ = require('underscore');
 
 mongoose.connect(DB_URL);
 
-const booksSchema = {
+const booksSchema = new mongoose.Schema({
   title: {
     type: String,
     required: [true, "Please check your data entry, no title specified!"]
@@ -32,7 +32,9 @@ const booksSchema = {
     minimum: 0,
     maximum: 10
   }
-};
+}, {
+    timestamps: true
+});
 
 const Book = mongoose.model('Book', booksSchema);
 
