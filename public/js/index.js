@@ -54,6 +54,7 @@ async function getStatistics(books) {
   })
   
   var sortedTags = new Map([...tags.entries()].sort((a, b) => b[1] - a[1]));
+  var backgroundColors = fillColors(sortedTags.size);
 
   new Chart(document.getElementById("horizontalBar"), {
     "type": "horizontalBar",
@@ -62,7 +63,7 @@ async function getStatistics(books) {
       "datasets": [{
         "data": Array.from(sortedTags.values()),
         "fill": false,
-        "backgroundColor": fillColors(sortedTags.size),
+        "backgroundColor": backgroundColors,
       }]
     },
     "options": {
