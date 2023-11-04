@@ -333,7 +333,7 @@ function load(books) {
     var pw = $('input[name=code]').val();
     checkPassword(pw).then(checkResult => {
       if (checkResult.result == true) {
-        books.currentBook.rating = $('input[name=rating]').val();
+        books.currentBook.rating = $('input[name=rating]').val().replace(',', '.');
         finishAndSetBook(books.currentBook, books.newBook).then(([finish, set]) => {
           document.location.reload();
         });
