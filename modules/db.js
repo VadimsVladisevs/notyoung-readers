@@ -5,9 +5,24 @@ var _ = require('underscore');
 
 mongoose.connect(DB_URL);
 
+const usersSchema = new mongoose.Schema({
+  username: {
+    type: String,
+    unique: true,
+    required: [true, "Please check your data entry, no username specified!"]
+  },
+  password: {
+    type: String,
+    required: [true, "Please check your data entry, no password specified!"]
+  }
+}, {
+  timestamps: true
+});
+
 const booksSchema = new mongoose.Schema({
   title: {
     type: String,
+    unique: [true, "Book already exist!"],
     required: [true, "Please check your data entry, no title specified!"]
   },
   author: {
@@ -99,11 +114,38 @@ function startBook(book) {
   })
 }
 
+const User = mongoose.model('User', usersSchema)
+
+function addUser(user) {
+  const newUser = new User(user);
+  return new Promise(function(resolve, reject) {
+    newUser.save(user, function(err, savedUser) {
+      err ? reject(err) : resolve(savedUser);
+    });
+  });
+};
+
+function findUserByUsername(username) {
+  return new Promise(function(resolve, reject) {
+    User.find({
+      username: username
+    }, function(err, foundUser) {
+      if (err) {
+        reject(err);
+      }
+
+      resolve(foundUser);
+    });
+  })
+};
+
 module.exports = {
   findAllBooks,
   findBooksByStatus,
   finishBook,
   startBook,
   addBook,
-  deleteByTitle
+  deleteByTitle,
+  addUser,
+  findUserByUsername,
 };

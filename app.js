@@ -85,13 +85,27 @@ app.delete('/deletebook', function(req, res) {
   });
 });
 
+app.post('/createuser', function(req, res) {
+  bcrypt.genSalt(12, (err, salt) => {
+    bcrypt.hash(req.body.password, salt, function(err, hash) {
+      db.addUser({username: req.body.username, password: hash}).then(result => {
+        res.send(`'${result.username}' user successfully added!`);
+      }).catch(err => {
+        res.send(err);
+      });
+    });
+  })
+})
+
 app.post('/check', function(req, res) {
   var pw = req.body.pw;
-  var myPw = "$2b$10$kVdazpXUBvuWjCtTn3dePeSrbkDXfX9PUT77aYHISvnJQgObp9rpG";
-  var result = bcrypt.compareSync(pw, myPw);
-  res.send({
-    result: result
-  });
+  db.findUserByUsername('admin').then(user => {
+    var result = bcrypt.compareSync(pw, user[0].password); 
+  
+    res.send({
+      result: result
+    });
+  })  
 });
 
 app.get("/", function(req, res) {
