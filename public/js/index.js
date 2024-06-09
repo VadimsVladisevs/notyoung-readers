@@ -40,33 +40,32 @@ async function finishAndSetBook(finishedBook, newBook) {
 }
 
 async function getStatistics(books) {
-  var tags = new Map();
-
-  books.allBooks.forEach(book => {
-    var tag = book['tag'];
-    if (books.NEW === book['status']) {
-      if (!tags.has(tag)) {
-        tags.set(book['tag'], 0);
-      }
-    } else {
-      tags.has(tag) ? tags.set(tag, tags.get(tag) + 1) : tags.set(tag, 1);  
-    }
-  })
-  
-  var sortedTags = new Map([...tags.entries()].sort((a, b) => b[1] - a[1]));
-  var backgroundColors = fillColors(sortedTags.size);
+  var result = getChartData(books)
+  var sortedResult = result.sort((a, b) => b.count - a.count)
 
   new Chart(document.getElementById("horizontalBar"), {
     "type": "horizontalBar",
     "data": {
-      "labels": Array.from(sortedTags.keys()).map((x) => x[0].toUpperCase() + x.slice(1)),
+      "labels": sortedResult.map(item => item.tag[0].toUpperCase() + item.tag.slice(1)),
       "datasets": [{
-        "data": Array.from(sortedTags.values()),
+        "data": sortedResult.map(item => item.count),
         "fill": false,
-        "backgroundColor": backgroundColors,
+        "backgroundColor": fillColors(sortedResult.length),
       }]
     },
     "options": {
+      "interaction": {
+        "intersect": false,
+        "mode": 'index',
+      },
+      "tooltips": {
+        "callbacks": {
+          "label": function (tooltipItem) {
+            var index = tooltipItem.index
+            return convertResultToString(sortedResult[index])
+          }
+        }
+      },
       "plugins": {
         "legend": false,
       },
@@ -78,7 +77,7 @@ async function getStatistics(books) {
           "ticks": {
             "beginAtZero": true,
             "stepSize": 1,
-            "max": sortedTags.values().next().value + 1,
+            "max": sortedResult[0].count + 1,
           }
         }],
         "yAxes": [{
@@ -91,7 +90,50 @@ async function getStatistics(books) {
   });
 }
 
-function fillColors(size) {
+const convertResultToString = (tooltipInfo) => {
+  var result = []
+  result.push(`Всего книг: ${tooltipInfo.count}`)
+  tooltipInfo.books.forEach(book => {
+    result.push(`${book.author} - ${book.title}. Оценка: ${book.rating}`)
+  });
+  result.push(`Средняя оценка: ${tooltipInfo.averageRating.toFixed(2)}`)
+  return result
+};
+
+const getChartData = (books) => {
+  const result = {};
+
+  books.allBooks.forEach(item => {
+    const tag = item.tag;
+
+    if (!result[tag]) {
+      result[tag] = {
+        tag: tag,
+        count: 0,
+        totalRating: 0,
+        books: []
+      };
+    }
+
+    if (books.PROGRESS === item.status || books.FINISHED === item.status) {
+      result[tag].count += 1;
+      result[tag].totalRating += item.rating;
+      result[tag].books.push({
+        author: item.author,
+        title: item.title,
+        rating: item.rating
+      });
+    }
+  });
+
+  return Object.values(result).map(tagInfo => {
+    tagInfo.averageRating = tagInfo.totalRating / tagInfo.count;
+    delete tagInfo.totalRating
+    return tagInfo
+  });
+}
+
+const fillColors = (size) => {
   var colors = [];
   for (let i = 0; i < size; i++) {
     colors.push(getRandomRgba());
@@ -100,7 +142,7 @@ function fillColors(size) {
   return colors;
 }
 
-function getRandomRgba() {
+const getRandomRgba = () => {
   const randomNumber = (min, max) => Math.floor(Math.random() * (max - min + 1) + min);
   const randomByte = () => randomNumber(0, 255)
   const randomPercent = () => (randomNumber(50, 100) * 0.01).toFixed(2)
@@ -119,7 +161,7 @@ async function checkPassword(pw) {
         'Accept': 'application/json',
         'Content-Type': 'application/json'
       },
-      body: JSON.stringify({pw: pw})
+      body: JSON.stringify({ pw: pw })
     })
   );
   const checkResult = await checkResponse.json();
@@ -247,11 +289,11 @@ function addFinishedBooks(finishedBooks) {
     var colDiv;
     var imgDiv;
     if (bookOrder % 2 !== 0) {
-        colDiv = $('<div/>').addClass('col-md-7 order-md-2');
-        imgDiv = $('<div/>').addClass('col-md-5 order-md-1');
+      colDiv = $('<div/>').addClass('col-md-7 order-md-2');
+      imgDiv = $('<div/>').addClass('col-md-5 order-md-1');
     } else {
-        colDiv = $('<div/>').addClass('col-md-7');
-        imgDiv = $('<div/>').addClass('col-md-5');
+      colDiv = $('<div/>').addClass('col-md-7');
+      imgDiv = $('<div/>').addClass('col-md-5');
     }
 
     const title = $('<h2/>').addClass("featurette-heading").text(`${bookOrder}. ${book.title}. ${book.author}`); //random-book-result
@@ -278,7 +320,7 @@ function load(books) {
   addBooksToCards(books);
   addBookToSwiper(books);
 
-  $(".btn-check").change(function() {
+  $(".btn-check").change(function () {
     index = this.id.match(/\d+/)[0];
     var tmpBook = books.library[index];
     if (this.checked) {
@@ -297,39 +339,39 @@ function load(books) {
     $(".choosen-book-count").text(choosenBookCount);
   });
 
-  $(".random-book-btn").click(function() {
+  $(".random-book-btn").click(function () {
     books.newBook = chooseRandomBook(books.library);
   });
 
-  $(".statistics-btn").click(function() {
-    getStatistics(books);    
+  $(".statistics-btn").click(function () {
+    getStatistics(books);
   })
 
-  $(".choose-book-btn").click(function() {
+  $(".choose-book-btn").click(function () {
     if (books.choosenBooks.size !== 0) {
       books.newBook = chooseRandomBook(books.choosenBooks);
     }
   });
 
-  $(".facebook-icon").click(function() {
+  $(".facebook-icon").click(function () {
     window.open('https://www.facebook.com/groups/3163101350641339', '_blank');
   });
 
-  $(".discord-icon").click(function() {
+  $(".discord-icon").click(function () {
     window.open('https://discord.gg/cHrschCSj9', '_blank');
   });
 
-  $(".fa-image").click(function() {
+  $(".fa-image").click(function () {
     window.open('https://miro.com/app/board/uXjVOIQRq2I=/', '_blank');
   });
 
 
-  $("#approve-btn").click(function() {
+  $("#approve-btn").click(function () {
     $("#current-book-rating-label").append(`<strong>${books.currentBook.title}. ${books.currentBook.author}</strong>:`);
   });
 
-  $("#confirm-btn").click(function() {
-    
+  $("#confirm-btn").click(function () {
+
     var pw = $('input[name=code]').val();
     checkPassword(pw).then(checkResult => {
       if (checkResult.result == true) {
@@ -354,7 +396,7 @@ function load(books) {
       prevEl: '.swiper-button-prev',
     },
     on: {
-      resize: function() {
+      resize: function () {
         swiper.changeDirection(getDirection());
       },
     },
@@ -378,10 +420,10 @@ function myFunction() {
   var cards = document.getElementById("myCards").getElementsByClassName("card");
   var classes;
   for (i = 0; i < cards.length; i++) {
-      if (cards[i].querySelector(".card-body").className.toUpperCase().indexOf(filter) > -1) {
-          cards[i].style.display = "";
-      } else {
-          cards[i].style.display = "none";
-      }
+    if (cards[i].querySelector(".card-body").className.toUpperCase().indexOf(filter) > -1) {
+      cards[i].style.display = "";
+    } else {
+      cards[i].style.display = "none";
+    }
   }
 }
