@@ -39,16 +39,16 @@ async function finishAndSetBook(finishedBook, newBook) {
   return [finish, set];
 }
 
-async function getStatistics(books) {
+async function getStatistics(books, mode) {
   var result = getChartData(books)
-  var sortedResult = result.sort((a, b) => b.count - a.count)
+  var sortedResult = mode === 'count' ? result.sort((a, b) => b.count - a.count) : result.filter(item => item.averageRating).sort((a, b) => b.averageRating - a.averageRating)
 
   new Chart(document.getElementById("horizontalBar"), {
     "type": "horizontalBar",
     "data": {
       "labels": sortedResult.map(item => item.tag[0].toUpperCase() + item.tag.slice(1)),
       "datasets": [{
-        "data": sortedResult.map(item => item.count),
+        "data": mode === 'count' ? sortedResult.map(item => item.count) : sortedResult.map(item => item.averageRating),
         "fill": false,
         "backgroundColor": fillColors(sortedResult.length),
       }]
@@ -77,7 +77,7 @@ async function getStatistics(books) {
           "ticks": {
             "beginAtZero": true,
             "stepSize": 1,
-            "max": sortedResult[0].count + 1,
+            "max": mode === 'count' ? sortedResult[0].count + 1 : 10,
           }
         }],
         "yAxes": [{
@@ -94,7 +94,7 @@ const convertResultToString = (tooltipInfo) => {
   var result = []
   result.push(`Всего книг: ${tooltipInfo.count}`)
   tooltipInfo.books.forEach(book => {
-    result.push(`${book.author} - ${book.title}. Оценка: ${book.rating}`)
+    result.push(`${book.author} - ${book.title}. Оценка: ${book.rating ?? '-'}`)
   });
   result.push(`Средняя оценка: ${tooltipInfo.averageRating.toFixed(2)}`)
   return result
@@ -117,7 +117,11 @@ const getChartData = (books) => {
 
     if (books.PROGRESS === item.status || books.FINISHED === item.status) {
       result[tag].count += 1;
-      result[tag].totalRating += item.rating;
+      if (item.rating) {
+        result[tag].totalRating += item.rating;
+      } else {
+        result[tag].hasBookInProgress = true;
+      }    
       result[tag].books.push({
         author: item.author,
         title: item.title,
@@ -126,11 +130,15 @@ const getChartData = (books) => {
     }
   });
 
-  return Object.values(result).map(tagInfo => {
-    tagInfo.averageRating = tagInfo.totalRating / tagInfo.count;
-    delete tagInfo.totalRating
-    return tagInfo
-  });
+  return Object.values(result)
+    .map(tagInfo => {
+      var totalBooks = tagInfo.hasBookInProgress ? tagInfo.count - 1 : tagInfo.count;
+      tagInfo.averageRating = tagInfo.totalRating / totalBooks;
+      
+      delete tagInfo.totalRating
+      delete tagInfo.hasBookInProgress
+      return tagInfo
+    });
 }
 
 const fillColors = (size) => {
@@ -344,7 +352,20 @@ function load(books) {
   });
 
   $(".statistics-btn").click(function () {
-    getStatistics(books);
+    getStatistics(books, 'count');
+  })
+
+  $(".btn-statistics-mode-switch").click(function() {
+    if ($(".btn-statistics-mode-switch").attr("mode") === "count") {
+      getStatistics(books, 'rating')
+      $(".btn-statistics-mode-switch").attr("mode", "rating")
+      $(".btn-statistics-mode-switch").text("Рейтинг")
+    } else {
+      getStatistics(books, 'count')
+      $(".btn-statistics-mode-switch").attr("mode", "count")
+      $(".btn-statistics-mode-switch").text("Количество")
+    }
+    
   })
 
   $(".choose-book-btn").click(function () {
