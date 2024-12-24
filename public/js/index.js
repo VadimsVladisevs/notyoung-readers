@@ -39,11 +39,17 @@ async function finishAndSetBook(finishedBook, newBook) {
   return [finish, set];
 }
 
+let chartInstance = null;
+
 async function getStatistics(books, mode) {
   var result = getChartData(books)
   var sortedResult = mode === 'count' ? result.sort((a, b) => b.count - a.count) : result.filter(item => item.averageRating).sort((a, b) => b.averageRating - a.averageRating)
 
-  new Chart(document.getElementById("horizontalBar"), {
+  if (chartInstance) {
+    chartInstance.destroy();
+  }
+
+  chartInstance = new Chart(document.getElementById("horizontalBar"), {
     "type": "horizontalBar",
     "data": {
       "labels": sortedResult.map(item => item.tag[0].toUpperCase() + item.tag.slice(1)),
