@@ -1,12 +1,11 @@
-// const HOST_URL = 'http://localhost:3000';
-const HOST_URL = 'https://notyoung-reader.onrender.com';
+const hostUrl = `${window.location.protocol}//${window.location.hostname}:${window.location.port}`;
 
 async function fetchAllBooks() {
   const [allBooksResponse, finishedResponse, newResponse, progressResponse] = await Promise.all([
-    fetch(HOST_URL.concat('/books')),
-    fetch(HOST_URL.concat('/books?status=finished')),
-    fetch(HOST_URL.concat('/books?status=new')),
-    fetch(HOST_URL.concat('/books?status=progress'))
+    fetch(hostUrl.concat('/books')),
+    fetch(hostUrl.concat('/books?status=finished')),
+    fetch(hostUrl.concat('/books?status=new')),
+    fetch(hostUrl.concat('/books?status=progress'))
   ]);
   const allBooks = await allBooksResponse.json();
   const finishedBooks = await finishedResponse.json();
@@ -17,7 +16,7 @@ async function fetchAllBooks() {
 
 async function finishAndSetBook(finishedBook, newBook) {
   const [finishResponse, setResponse] = await Promise.all([
-    fetch(HOST_URL.concat('/finish'), {
+    fetch(hostUrl.concat('/finish'), {
       method: 'POST',
       headers: {
         'Accept': 'application/json',
@@ -25,7 +24,7 @@ async function finishAndSetBook(finishedBook, newBook) {
       },
       body: JSON.stringify(finishedBook)
     }),
-    fetch(HOST_URL.concat('/start'), {
+    fetch(hostUrl.concat('/start'), {
       method: 'POST',
       headers: {
         'Accept': 'application/json',
@@ -169,7 +168,7 @@ const getRandomRgba = () => {
 async function checkPassword(pw) {
 
   const checkResponse = await Promise.resolve(
-    fetch(HOST_URL.concat('/check'), {
+    fetch(hostUrl.concat('/check'), {
       method: 'POST',
       headers: {
         'Accept': 'application/json',

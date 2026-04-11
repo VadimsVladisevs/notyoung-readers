@@ -1,9 +1,9 @@
-const { DB_URL } = require('../constants');
 const Promise = require('bluebird');
 const mongoose = Promise.promisifyAll(require('mongoose'));
 var _ = require('underscore');
+const dbUrl = process.env.DB_URL;
 
-mongoose.connect(DB_URL);
+mongoose.connect(dbUrl);
 
 const usersSchema = new mongoose.Schema({
   username: {
@@ -55,89 +55,87 @@ const Book = mongoose.model('Book', booksSchema);
 
 function addBook(book) {
   const newBook = new Book(book);
-  return new Promise(function(resolve, reject) {
-    newBook.save(book, function(err, savedBook) {
-      err ? reject(err) : resolve(savedBook);
-    });
+  return new Promise((resolve, reject) => {
+    newBook.save()
+      .then((savedBook) => resolve(savedBook))
+      .catch((err) => reject(err));
   });
 };
 
 function deleteByTitle(title) {
-  return new Promise(function(resolve, reject) {
-    Book.deleteOne({title: title}, function(err, deletedBook) {
-      err ? reject(err) : deletedBook.deletedCount === 0 ?
-        resolve("Book not found") : resolve("Book deleted");
-    });
+  return new Promise((resolve, reject) => {
+    Book.deleteOne({ title })
+      .then((deletedBook) => {
+        if (deletedBook.deletedCount === 0) {
+          resolve('Book not found');
+        } else {
+          resolve('Book deleted');
+        }
+      })
+      .catch((err) => reject(err));
   });
 };
 
 function findAllBooks() {
-  return new Promise(function(resolve, reject) {
-    Book.find(function(err, foundBooks) {
-      if (err) {
-        reject(err);
-      }
+  return new Promise(async function(resolve, reject) {
+    Book.find({})
+    .then(function(foundBooks) {
       resolve(foundBooks);
+    })
+    .catch(function(err) {
+      reject(err);
     });
   });
 };
 
 function findBooksByStatus(status) {
-  return new Promise(function(resolve, reject) {
-    Book.find({
-      status: status
-    }, function(err, foundBooks) {
-      if (err) {
-        reject(err);
-      }
-
-      status === 'finished' ? resolve(_.sortBy(foundBooks, 'rating')) : resolve(foundBooks);
-    });
-  })
-};
+  return new Promise((resolve, reject) => {
+    Book.find({ status })
+      .then((foundBooks) => {
+        if (status === 'finished') {
+          resolve(_.sortBy(foundBooks, 'rating'));
+        } else {
+          resolve(foundBooks);
+        }
+      })
+      .catch((err) => reject(err));
+  });
+}
 
 function finishBook(book) {
-  return new Promise(function(resolve, reject) {
-    Book.updateOne({_id: book._id}, {$set: {rating: book.rating, status: "finished"}}, function(err) {
-      err ? reject(err) : resolve("ok");
-      // mongoose.connection.close();
-    });
-  })
+  return new Promise((resolve, reject) => {
+    Book.updateOne({ _id: book._id }, { $set: { rating: book.rating, status: 'finished' } })
+      .then(() => resolve('ok'))
+      .catch((err) => reject(err));
+  });
 }
 
 function startBook(book) {
-  return new Promise(function(resolve, reject) {
-    Book.updateOne({_id: book._id}, {status: "progress"}, function(err) {
-      err ? reject(err) : resolve("ok");
-      // mongoose.connection.close();
-    });
-  })
+  return new Promise((resolve, reject) => {
+    Book.updateOne({ _id: book._id }, { status: 'progress' })
+      .then(() => resolve('ok'))
+      .catch((err) => reject(err));
+  });
 }
 
 const User = mongoose.model('User', usersSchema)
 
 function addUser(user) {
   const newUser = new User(user);
-  return new Promise(function(resolve, reject) {
-    newUser.save(user, function(err, savedUser) {
-      err ? reject(err) : resolve(savedUser);
-    });
+  return new Promise((resolve, reject) => {
+    newUser.save()
+      .then((savedUser) => resolve(savedUser))
+      .catch((err) => reject(err));
   });
-};
+}
 
 function findUserByUsername(username) {
-  return new Promise(function(resolve, reject) {
-    User.find({
-      username: username
-    }, function(err, foundUser) {
-      if (err) {
-        reject(err);
-      }
-
-      resolve(foundUser);
-    });
-  })
-};
+  return new Promise((resolve, reject) => {
+    User.find({ username })
+      .then((foundUser) => resolve(foundUser))
+      .catch((err) => reject(err));
+  });
+}
 
 module.exports = {
   findAllBooks,
