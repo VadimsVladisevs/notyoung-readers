@@ -25,10 +25,12 @@ MongoDB database `readersDB`, collection **`books`**, shared with the legacy app
 
 Workflow of a book: `new` → (start) `progress` → (finish with rating) `finished`. The club reads one book at a time; the UI treats the first `progress` book as "current".
 
-Collection **`users`** (legacy only): the `admin` user's **bcrypt** hash of the club password. The new backend does not read it yet. Today it compares against `ADMIN_PASSWORD_HASH` (PBKDF2, fixed salt). Phase 3 switches to the existing bcrypt hash.
+Collection **`users`** (legacy only): the `admin` user's **bcrypt** hash of the club password (`$2b$`, Node `bcrypt`). The new backend never reads it: the same hash is copied once into env `ADMIN_PASSWORD_HASH`, so the club password stays the same.
 
 ## API contract (backend)
 Errors are RFC 9457 `ProblemDetail` (`application/problem+json`): `title`, `status`, `detail`, `instance`. Validation errors add `errors: {field: message}`. Any unexpected exception → 500 with a generic detail; the real message is only logged.
+
+**Auth (temporary until Phase 9 login):** `GET`/`HEAD /api/**` are public. **Every other `/api/**` request** needs header `X-Club-Password: <club password>`. Without it, or with a wrong one → **401** ProblemDetail (`title` "Unauthorized"), checked before validation or lookup, so nothing changes. Stateless: no session, no cookies, no CSRF. **No CORS:** the dev server proxies `/api` and prod is same-origin, so cross-origin browser calls are blocked.
 
 | Endpoint | Input | Success | Errors |
 |---|---|---|---|
@@ -41,8 +43,8 @@ Errors are RFC 9457 `ProblemDetail` (`application/problem+json`): `title`, `stat
 | `DELETE /api/books/{id}` | | 200, **empty body** | 404 |
 | `GET /api/books/random` | `?booksId=a&booksId=b` optional | 200 random book from the ids; with no ids, from `new` books only | 404 nothing to pick / unknown id |
 | `GET /api/statistics` | | 200 `{"statistics": {tag: count}}`, count of non-`new` books, sorted desc; a tag with only `new` books → 0 | |
-| `POST /api/check-password` | `password` request param (the UI sends form data) | 200 | 400 wrong, blank or missing |
+| `POST /api/check-password` | `X-Club-Password` header (no body or params) | 200 | 401 wrong, blank or missing |
 
-**Writes are not protected yet** (Phase 3 adds the password check server-side). `@CrossOrigin` allows all origins (Phase 3 limits it to dev origins).
+All rows except the `GET`s also return 401 without the right header (see Auth above). The current UI still sends `check-password` as form data and sends no header on writes; Phase 4 fixes that.
 
 The legacy app's endpoints (`/books`, `/finish`, `/start`, `/addbook`, ...) are in [legacy-analysis.md](legacy-analysis.md); the new API is not a drop-in replacement for them.

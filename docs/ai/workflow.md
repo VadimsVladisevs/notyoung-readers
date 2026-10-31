@@ -13,7 +13,8 @@
 |---|---|
 | Backend build + all tests | `cd backend && ./mvnw verify` |
 | Backend compile only | `./mvnw -q compile` |
-| Run backend against local Mongo | `ADMIN_PASSWORD_HASH=<any> ./mvnw spring-boot:run -Dspring-boot.run.profiles=dev` → `http://localhost:8080/api/books` |
+| Run backend against local Mongo | `ADMIN_PASSWORD_HASH='<bcrypt hash>' ./mvnw spring-boot:run -Dspring-boot.run.profiles=dev` → `http://localhost:8080/api/books`. Single quotes: the hash contains `$`. Test hash for password `club-secret`: `$2a$04$abDVDCCBrxHefMnW2MlYw.Ur41qnEcwu6CCGLV4vkwsv4/3RJ0eqK` (from `IntegrationTest`) |
+| Try a protected write | `curl -X POST -H "X-Club-Password: club-secret" localhost:8080/api/check-password` → 200 (401 without the header) |
 | Frontend | see [frontend.md](frontend.md) |
 | Legacy app | `node app.js` → `http://localhost:3000` (needs `DB_URL` in root `.env`, gitignored) |
 

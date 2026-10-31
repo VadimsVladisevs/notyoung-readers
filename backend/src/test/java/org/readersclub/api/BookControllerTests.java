@@ -104,7 +104,7 @@ class BookControllerTests extends IntegrationTest {
 
         @Test
         void createsNewBook() throws Exception {
-            mockMvc.perform(post("/api/books/add").contentType(MediaType.APPLICATION_JSON).content(VALID_BODY))
+            mockMvc.perform(post("/api/books/add").with(clubPassword()).contentType(MediaType.APPLICATION_JSON).content(VALID_BODY))
                     .andExpect(status().isCreated())
                     .andExpect(jsonPath("$.id").isNotEmpty())
                     .andExpect(jsonPath("$.status").value("new"))
@@ -134,7 +134,7 @@ class BookControllerTests extends IntegrationTest {
         @ParameterizedTest
         @MethodSource("invalidBodies")
         void rejectsInvalidBook(String invalidField, String body) throws Exception {
-            mockMvc.perform(post("/api/books/add").contentType(MediaType.APPLICATION_JSON).content(body))
+            mockMvc.perform(post("/api/books/add").with(clubPassword()).contentType(MediaType.APPLICATION_JSON).content(body))
                     .andExpect(status().isBadRequest())
                     .andExpect(jsonPath("$.errors." + invalidField).isNotEmpty());
 
@@ -150,7 +150,7 @@ class BookControllerTests extends IntegrationTest {
             Book saved = save(BookStatus.FINISHED);
             Instant createdAt = bookRepository.findById(saved.getId()).orElseThrow().getCreatedAt();
 
-            mockMvc.perform(patch("/api/books/{id}/update", saved.getId())
+            mockMvc.perform(patch("/api/books/{id}/update", saved.getId()).with(clubPassword())
                             .contentType(MediaType.APPLICATION_JSON)
                             .content("""
                                     {"title": "New title"}"""))
@@ -168,7 +168,7 @@ class BookControllerTests extends IntegrationTest {
 
         @Test
         void returns404WhenMissing() throws Exception {
-            mockMvc.perform(patch("/api/books/{id}/update", MISSING_ID)
+            mockMvc.perform(patch("/api/books/{id}/update", MISSING_ID).with(clubPassword())
                             .contentType(MediaType.APPLICATION_JSON)
                             .content("{}"))
                     .andExpect(status().isNotFound());
@@ -186,7 +186,7 @@ class BookControllerTests extends IntegrationTest {
         void rejectsInvalidValues(String body) throws Exception {
             Book saved = save(BookStatus.NEW);
 
-            mockMvc.perform(patch("/api/books/{id}/update", saved.getId())
+            mockMvc.perform(patch("/api/books/{id}/update", saved.getId()).with(clubPassword())
                             .contentType(MediaType.APPLICATION_JSON)
                             .content(body))
                     .andExpect(status().isBadRequest());
@@ -200,7 +200,7 @@ class BookControllerTests extends IntegrationTest {
         void startsNewBook() throws Exception {
             Book book = save(BookStatus.NEW);
 
-            mockMvc.perform(patch("/api/books/{id}/start", book.getId()))
+            mockMvc.perform(patch("/api/books/{id}/start", book.getId()).with(clubPassword()))
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$.status").value("progress"));
 
@@ -212,14 +212,14 @@ class BookControllerTests extends IntegrationTest {
         void returns409WhenNotNew(BookStatus status) throws Exception {
             Book book = save(status);
 
-            mockMvc.perform(patch("/api/books/{id}/start", book.getId()))
+            mockMvc.perform(patch("/api/books/{id}/start", book.getId()).with(clubPassword()))
                     .andExpect(status().isConflict())
                     .andExpect(content().contentType(MediaType.APPLICATION_PROBLEM_JSON));
         }
 
         @Test
         void returns404WhenMissing() throws Exception {
-            mockMvc.perform(patch("/api/books/{id}/start", MISSING_ID))
+            mockMvc.perform(patch("/api/books/{id}/start", MISSING_ID).with(clubPassword()))
                     .andExpect(status().isNotFound());
         }
     }
@@ -231,7 +231,7 @@ class BookControllerTests extends IntegrationTest {
         void finishesBookInProgress() throws Exception {
             Book book = save(BookStatus.PROGRESS);
 
-            mockMvc.perform(patch("/api/books/{id}/finish", book.getId())
+            mockMvc.perform(patch("/api/books/{id}/finish", book.getId()).with(clubPassword())
                             .contentType(MediaType.APPLICATION_JSON)
                             .content("""
                                     {"rating": 8.5}"""))
@@ -244,7 +244,7 @@ class BookControllerTests extends IntegrationTest {
         void acceptsRatingAsString() throws Exception {
             Book book = save(BookStatus.PROGRESS);
 
-            mockMvc.perform(patch("/api/books/{id}/finish", book.getId())
+            mockMvc.perform(patch("/api/books/{id}/finish", book.getId()).with(clubPassword())
                             .contentType(MediaType.APPLICATION_JSON)
                             .content("""
                                     {"rating": "10.00"}"""))
@@ -259,7 +259,7 @@ class BookControllerTests extends IntegrationTest {
         void rejectsInvalidRating(String body) throws Exception {
             Book book = save(BookStatus.PROGRESS);
 
-            mockMvc.perform(patch("/api/books/{id}/finish", book.getId())
+            mockMvc.perform(patch("/api/books/{id}/finish", book.getId()).with(clubPassword())
                             .contentType(MediaType.APPLICATION_JSON)
                             .content(body))
                     .andExpect(status().isBadRequest())
@@ -271,7 +271,7 @@ class BookControllerTests extends IntegrationTest {
         void returns409WhenNotInProgress(BookStatus status) throws Exception {
             Book book = save(status);
 
-            mockMvc.perform(patch("/api/books/{id}/finish", book.getId())
+            mockMvc.perform(patch("/api/books/{id}/finish", book.getId()).with(clubPassword())
                             .contentType(MediaType.APPLICATION_JSON)
                             .content("""
                                     {"rating": 7}"""))
@@ -280,7 +280,7 @@ class BookControllerTests extends IntegrationTest {
 
         @Test
         void returns404WhenMissing() throws Exception {
-            mockMvc.perform(patch("/api/books/{id}/finish", MISSING_ID)
+            mockMvc.perform(patch("/api/books/{id}/finish", MISSING_ID).with(clubPassword())
                             .contentType(MediaType.APPLICATION_JSON)
                             .content("""
                                     {"rating": 7}"""))
@@ -295,7 +295,7 @@ class BookControllerTests extends IntegrationTest {
         void deletesBook() throws Exception {
             Book book = save(BookStatus.NEW);
 
-            mockMvc.perform(delete("/api/books/{id}", book.getId()))
+            mockMvc.perform(delete("/api/books/{id}", book.getId()).with(clubPassword()))
                     .andExpect(status().isOk());
 
             assertFalse(bookRepository.existsById(book.getId()));
@@ -303,7 +303,7 @@ class BookControllerTests extends IntegrationTest {
 
         @Test
         void returns404WhenMissing() throws Exception {
-            mockMvc.perform(delete("/api/books/{id}", MISSING_ID))
+            mockMvc.perform(delete("/api/books/{id}", MISSING_ID).with(clubPassword()))
                     .andExpect(status().isNotFound());
         }
     }

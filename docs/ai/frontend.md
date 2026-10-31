@@ -16,7 +16,7 @@ React 18 + TypeScript (strict) + MUI 6, Swiper (library carousel), Chart.js via 
 Main flows: library swiper of `new` books → selection dialog (search, checkboxes, random pick) → approval dialog (rating for the current book + club password) → finish current, start chosen → refresh. Statistics dialog toggles count / average rating per tag. The full checklist of features the new UI must match is in [legacy-analysis.md](legacy-analysis.md).
 
 ## Known gaps (fixed in Phase 4)
-- Writes don't send the password; only `check-password` is called first. Phase 3 makes the server require it.
+- **Broken against the current backend until Phase 4:** the backend now needs header `X-Club-Password` on every write and on `check-password` (see the Auth note in [architecture.md](architecture.md)). The UI sends no header and posts `check-password` as form data, so all its writes get 401.
 - `finishBook` sends `rating ?? 0` → the backend rejects 0 (400).
 - `request()` calls `response.json()` on every response, so it throws on the empty `DELETE` body.
 - Errors are reduced to `HTTP error! status: N`; the UI only checks `response.ok`.
