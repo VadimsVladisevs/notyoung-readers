@@ -37,7 +37,7 @@ Snapshot of `C:\Projects\readers-club` (2026-10-31). Its git repo has no commits
 | — | `POST /createuser` | dropped (good) |
 
 ## Schema compatibility
-`Book` maps to the same `books` collection: `id`↔`_id`, title, author, image, status, tag, wiki, rating (Double), createdAt/updatedAt via `@EnableMongoAuditing`. `BookStatus` is stored and read as lowercase `new`/`progress`/`finished` through custom converters → matches legacy data. Legacy `__v` is ignored on read. `wiki` is `@NotNull` on the entity, but this isn't enforced on read; legacy books without `wiki` still load. `users` is not modelled. **Conclusion: no data migration expected**; verify against prod in Phase 6.
+`Book` maps to the same `books` collection: `id`↔`_id`, title, author, image, status, tag, wiki, rating (Double), createdAt/updatedAt via `@EnableMongoAuditing`. `BookStatus` is stored and read as lowercase `new`/`progress`/`finished` through custom converters → matches legacy data. Legacy `__v` is ignored on read. `wiki` is `@NotNull` on the entity, but this isn't enforced on read; legacy books without `wiki` still load. `users` is not modelled. **Conclusion: no data migration expected**; verify against prod in Phase 7.
 
 ## Bugs (verified in code)
 | # | Where | Bug |

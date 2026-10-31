@@ -41,7 +41,7 @@ A rewrite is in progress at `C:\Projects\readers-club`:
   - UI starts a book without any password when no book is in progress (found in Phase 0).
 
 ## Repo layout on the branch
-Branch: `migration/spring-react`. The legacy Node app stays at the repo root until cutover (phase 6), so `main` and the Render deploy are untouched.
+Branch: `migration/spring-react`. The legacy Node app stays at the repo root until cutover (phase 7), so `main` and the Render deploy are untouched.
 ```
 backend/        <- C:\Projects\readers-club (pom.xml, src/) + Maven wrapper
 frontend/       <- C:\Projects\readers-club\ui (Vite)
@@ -60,10 +60,11 @@ Each phase has a sub-plan `0N-<name>.md`, written in detail when the phase start
 | 2 | ☐ | 02-backend-upgrade.md | Maven wrapper; latest stable Boot 4.x / Java LTS; `spring-boot-maven-plugin`; fix scopes; env-only config (`DB_URL`, `PORT`), `dev`/`prod` profiles; fix bugs; 404s and business exceptions; Testcontainers + MockMvc tests | `./mvnw verify` green; runs against local Mongo |
 | 3 | ☐ | 03-server-auth.md | Spring Security: GETs public; POST/PATCH/DELETE `/api/**` require club password (BCrypt, existing hash); CORS dev origins only; keep `/api/check-password` | Tests prove writes 401 without password, succeed with it |
 | 4 | ☐ | 04-frontend-vite.md | CRA → Vite + Vitest; upgrade React 19.x, MUI, Swiper, Chart.js; `InputProps`→`slotProps`; `@import` order; send password on writes; fix rating-0; remove unused dialogs; fix manifest; real component tests; parity check vs old `index.html` | `npm run build` + `npm test` green; parity checklist ticked |
-| 5 | ☐ | 05-packaging-staging.md | Multi-stage Dockerfile (Node → Maven → JRE, Render memory flags); SPA fallback; actuator health; `render.yaml`; separate staging service against a copy of the Atlas DB | Staging URL serves the site; all flows work |
-| 6 | ☐ | 06-data-check-cutover.md | Read-only prod data check; move images; delete legacy Node files one at a time; README; PR to `main`; user switches prod Render service to Docker (guided); rollback path | Prod runs the new app; old one retired |
-| 7 | ☐ | 07-images-in-db.md | Move cover images from the file system into MongoDB (likely GridFS; details to discuss). One-off import script for `images/*`; image endpoint (e.g. `GET /api/images/{id}`) with cache headers; book `image` field → reference; upload on add-book (password-protected); remove `images/` from the repo/Docker image | All covers served from the DB; no image files in the image; Atlas storage within limits |
-| 8 | ☐ | *(future)* | Admin login/session replacing per-request password | — |
+| 5 | ☐ | 05-local-dev-setup.md | Local dev setup on the existing local MongoDB (Windows service `MongoDB`, `localhost:27017`, DB `readersDB` — same as the legacy `.env` and the rewrite's old `application.yaml`). `dev` profile defaults to that DB; gitignored env template (e.g. `.env.example` / `application-local.yaml.example`) for `DB_URL`, `ADMIN_PASSWORD_HASH`; how to seed/copy data (e.g. `mongodump`/`mongorestore` from Atlas, read-only); run backend (`./mvnw spring-boot:run`) + frontend (Vite dev server, `/api` proxy → `:8080`); root `README.md` with prerequisites (JDK, Node, MongoDB) and step-by-step run/test instructions | A fresh clone runs locally by following only the README; all flows work against local Mongo |
+| 6 | ☐ | 06-packaging-staging.md | Multi-stage Dockerfile (Node → Maven → JRE, Render memory flags); SPA fallback; actuator health; `render.yaml`; separate staging service against a copy of the Atlas DB | Staging URL serves the site; all flows work |
+| 7 | ☐ | 07-data-check-cutover.md | Read-only prod data check; move images; delete legacy Node files one at a time; update README (deploy section, remove legacy notes); PR to `main`; user switches prod Render service to Docker (guided); rollback path | Prod runs the new app; old one retired |
+| 8 | ☐ | 08-images-in-db.md | Move cover images from the file system into MongoDB (likely GridFS; details to discuss). One-off import script for `images/*`; image endpoint (e.g. `GET /api/images/{id}`) with cache headers; book `image` field → reference; upload on add-book (password-protected); remove `images/` from the repo/Docker image | All covers served from the DB; no image files in the image; Atlas storage within limits |
+| 9 | ☐ | *(future)* | Admin login/session replacing per-request password | — |
 
 ## Verification (overall)
 - **Backend:** `./mvnw verify` (unit, MockMvc, Testcontainers).
@@ -77,6 +78,7 @@ Each phase has a sub-plan `0N-<name>.md`, written in detail when the phase start
 |---|---|
 | 2026-10-31 | Keep Spring Boot + React (see `docs/ai/adr-001-tech-stack.md`). |
 | 2026-10-31 | Work on branch `migration/spring-react` in this repo; legacy app stays until cutover. |
-| 2026-10-31 | Protect writes with the shared club password, checked server-side; login page later (phase 8). |
+| 2026-10-31 | Protect writes with the shared club password, checked server-side; login page later (phase 9). |
 | 2026-10-31 | Phase 0: delete stray `@` (old package.json backup); concise analysis docs; review then one commit. |
-| 2026-10-31 | Store cover images in MongoDB instead of the file system — new phase 7, after cutover so the migration ships with today's files first. Design (GridFS vs. binary field, resizing, caching) to be discussed when the phase starts. Current set: 163 files, ~24 MB, largest ~1.6 MB. |
+| 2026-10-31 | Store cover images in MongoDB instead of the file system — new phase 8, after cutover so the migration ships with today's files first. Design (GridFS vs. binary field, resizing, caching) to be discussed when the phase starts. Current set: 163 files, ~24 MB, largest ~1.6 MB. |
+| 2026-10-31 | New phase 5: local dev setup on the existing local MongoDB + root `README.md` with run instructions. Placed after the backend (2–3) and frontend (4) work so it documents the final dev commands; later phases renumbered (staging 6, cutover 7, images 8, login 9). Note: Docker is not installed on the dev machine — needed for Testcontainers (phase 2) and the Dockerfile (phase 6); decide then (install Docker Desktop, or run tests against the local Mongo). |

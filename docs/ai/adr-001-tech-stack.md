@@ -27,7 +27,7 @@ The live site is a small Express + jQuery app on Render with MongoDB Atlas. It h
   - One deployable unit.
 - **Negative:**
   - Higher RAM use and slower cold starts on Render.
-  - Mitigations: tuned JVM flags (e.g. `-XX:MaxRAMPercentage`, SerialGC), lazy init if needed, a health endpoint, and measuring on the staging service (Phase 5) before cutover.
+  - Mitigations: tuned JVM flags (e.g. `-XX:MaxRAMPercentage`, SerialGC), lazy init if needed, a health endpoint, and measuring on the staging service (Phase 6) before cutover.
 - **Revisit if:**
   - Staging shows the instance can't fit in its memory limit.
   - Cold starts are unacceptable to the club.
