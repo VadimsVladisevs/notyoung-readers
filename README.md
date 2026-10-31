@@ -44,4 +44,11 @@ cd frontend && npm test && npm run build
 ```
 
 ## Configuration (production)
-The base config has no defaults. Production sets these env vars: `DB_URL` (MongoDB URI), `ADMIN_PASSWORD_HASH` (bcrypt hash of the club password) and `PORT` (default 8080).
+The base config has no defaults. Production sets these env vars: `DB_URL` (MongoDB URI), `ADMIN_PASSWORD_HASH` (bcrypt hash of the club password) and `PORT` (default 8080). `DB_NAME` picks the database (default `readersDB`).
+
+## Docker image and staging
+```bash
+docker build -t readers-club .     # frontend + backend + covers in one image; tests don't run here
+docker run --rm -p 8090:8080 -e DB_URL=mongodb://host.docker.internal:27017/readersDB \n  -e ADMIN_PASSWORD_HASH='<bcrypt hash>' readers-club
+```
+Staging runs this image on Render (Free) at `https://readers-club-staging.onrender.com`, defined in `render.yaml` and deployed from the `migration/spring-react` branch. It uses `readersDB_staging`, a copy of the prod data, with an Atlas user that can only access that database. The first request after 15 minutes idle wakes the service and is slow.

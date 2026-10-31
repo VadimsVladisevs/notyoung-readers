@@ -1,6 +1,6 @@
 # Phase 6 — Packaging + Render staging
 
-Part of [PLAN.md](PLAN.md). Status: ◐
+Part of [PLAN.md](PLAN.md). Status: ☑ (done 2026-10-31; browser walk-through deferred to Phase 7)
 
 ## Goal
 Package backend + frontend into **one Docker image** (Spring Boot serves the built SPA and the covers) and run it as a **separate Render staging service** on a **copy** of the Atlas data. Every flow gets checked on real infrastructure before cutover (Phase 7). Prod (`main`, legacy Node service) stays untouched.
@@ -20,9 +20,9 @@ Package backend + frontend into **one Docker image** (Spring Boot serves the bui
 - [x] **3. `Dockerfile` + `.dockerignore`** (Node → Maven → JRE, Render memory flags, non-root).
 - [x] **4. `render.yaml`** for `readers-club-staging`.
 - [x] **5. Local image check** against the compose Mongo.
-- [◐] **6. Atlas staging DB** (user runs the commands): Atlas version; dump → restore as `readersDB_staging`; counts; staging user; Network Access.
-- [ ] **7. Push + Blueprint** (confirm before pushing); env vars entered in the dashboard.
-- [ ] **8. Staging walk-through**; `update-ai-docs`; short README deploy note; PLAN.md row ☑.
+- [x] **6. Atlas staging DB** (user runs the commands): Atlas version; dump → restore as `readersDB_staging`; counts; staging user; Network Access.
+- [x] **7. Push + Blueprint** (confirm before pushing); env vars entered in the dashboard.
+- [x] **8.** `update-ai-docs`; short README deploy note; PLAN.md row ☑. **Browser walk-through, prod-unchanged check and cold-start timing deferred to Phase 7** (user decision: test everything at the end, after planned enhancements).
 
 ## Findings
 - **Local image (2026-10-31):** builds in ~2 min from scratch; image 593 MB (JRE + jar + 24 MB covers). Starts in ~13 s on the dev machine; ~180 MiB used of a 512 MiB limit at idle. Runs as non-root `app`. Render Free has far less CPU, so expect a much slower cold start there.
@@ -30,6 +30,8 @@ Package backend + frontend into **one Docker image** (Spring Boot serves the bui
 - **`DB_NAME`** switches the database even when `DB_URL` has a path (`spring.mongodb.database` wins). Reads on a missing DB return `[]` and don't create it.
 - **Atlas runs MongoDB 8.0.36** (checked 2026-10-31): matches Testcontainers and compose `mongo:8.0`. Closes the open item from Phases 2 and 5.
 - **Staging DB copied (2026-10-31):** `mongodump` of prod `readersDB` → `mongorestore --nsFrom 'readersDB.*' --nsTo 'readersDB_staging.*'`, 295 docs, 0 failures. `books` 159 = 159; also `books_copy` 135 (old leftover) and `users` 1. The archive (it contains the admin bcrypt hash) is in the user's home folder, not the repo.
+- **Atlas user `readers-staging`** (`readWrite` on `readersDB_staging` only): `mongodb+srv://readers-staging:…@<cluster>/readersDB_staging` reads the 159 books. `bad auth` at first came from editing a different Atlas user; with `+srv`, Atlas checks the login against `admin`, so a missing DB never causes `bad auth`.
+- **Staging live (2026-10-31)** at `https://readers-club-staging.onrender.com` from the Blueprint. Read-only checks over the network: health UP; `/` + assets 200; all 158 distinct covers the books reference → 200; `/api/books` 159 (new 102, finished 56, **progress 1**: prod has a single current book, unlike the local data, see Phase 4); statistics and random 200; `check-password` 401 without / with a wrong password; `/actuator/env` 404.
 - **Prod `books` has no indexes** besides `_id`: the unique `title` index the legacy Mongoose schema declares was never created on Atlas. Only `users.username_1` exists. Input for Phase 7's data check.
 - Health shows only `{"status":"UP"}` (plus the liveness/readiness group names); `/actuator/env` and other endpoints → 404.
 
@@ -37,4 +39,4 @@ Package backend + frontend into **one Docker image** (Spring Boot serves the bui
 - [x] `./mvnw verify` (122) and `npm run build && npm test` green.
 - [x] `docker build -t readers-club .` succeeds; image size noted.
 - [x] `docker run --memory=512m` against the compose Mongo: `/` serves the React page, a cover `/images/<x>.jpg` 200, `/api/books` lists the books, `/actuator/health` UP, `check-password` 401 without / 200 with the password; memory well under 512 MB; startup time noted.
-- [ ] Staging: deploy healthy; every flow (browse, statistics, random pick, start, finish with rating, add, delete) works against `readersDB_staging`; writes 401 with a wrong password; prod `readersDB` counts unchanged; cold start after sleep measured.
+- [ ] *(→ Phase 7)* Staging: deploy healthy ✔; read-only checks ✔ (see Findings); every flow (browse, statistics, random pick, start, finish with rating, add, delete) works against `readersDB_staging`; writes 401 with a wrong password; prod `readersDB` counts unchanged; cold start after sleep measured.
