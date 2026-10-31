@@ -1,0 +1,83 @@
+{
+  "app": {
+    "title": "Клуб \"НЕЮНЫЙ ЧИТАТЕЛЬ\""
+  },
+  "nav": {
+    "library": "Библиотека",
+    "currentBook": "Выбранная книга",
+    "finishedBooks": "Прочитанные книжки",
+    "bookSelection": "Выбор книги",
+    "statistics": "Статистика",
+    "contacts": "Контакты"
+  },
+  "sections": {
+    "library": {
+      "title": "Библиотека клуба"
+    },
+    "currentBook": {
+      "title": "Выбранная книжка",
+      "noBook": "Книга ещё не выбрана",
+      "tag": "Тег",
+      "finishButton": "Закончить",
+      "wikiButton": "Википедия",
+      "selectButton": "Выбрать книгу"
+    },
+    "finishedBooks": {
+      "title": "Прочитанные книжки"
+    }
+  },
+  "dialogs": {
+    "bookSelection": {
+      "title": "Добавьте книжку в список",
+      "searchPlaceholder": "Поиск книги..",
+      "noBooks": "Нет доступных книг",
+      "randomButton": "Случайный выбор",
+      "confirmSelectedButton": "Подтвердить",
+      "selectBookButton": "Выбрать",
+      "closeButton": "Отмена",
+      "confirmTitle": "Подтверждение выбора",
+      "confirmMessage": "Вы хотите выбрать книгу \"{title}\"?",
+      "confirmButton": "Подтвердить",
+      "cancelButton": "Отмена",
+      "noSelectedError": "Добавьте книжки для выбора",
+      "searchFilters": {
+        "tag": "Участник",
+        "title": "Название",
+        "author": "Автор"
+      }
+    },
+    "confirmBook": {
+      "title": "Завершить книгу",
+      "message": "Вы закончили читать \"{title}\"?",
+      "ratingLabel": "Ваша оценка:",
+      "cancelButton": "Отмена",
+      "confirmButton": "Подтвердить"
+    },
+    "randomBook": {
+      "title": "Случайная книга",
+      "anotherButton": "Другая книга",
+      "selectButton": "Выбрать эту книгу"
+    },
+    "approval": {
+      "title": "Подтверждение выбора",
+      "ratingLabel": "Оценка для",
+      "passwordLabel": "Код подтверждения",
+      "passwordRequired": "Введите код подтверждения",
+      "wrongPassword": "Неправильный пароль!",
+      "cancelButton": "Отмена",
+      "confirmButton": "Подтвердить"
+    },
+    "statistics": {
+      "title": "Статистика",
+      "totalBooks": "Всего книг",
+      "rating": "Оценка",
+      "averageRating": "Средняя оценка",
+      "modeCount": "Количество",
+      "modeRating": "Рейтинг",
+      "closeButton": "Закрыть"
+    }
+  },
+  "footer": {
+    "copyright": "Reader's club"
+  }
+}

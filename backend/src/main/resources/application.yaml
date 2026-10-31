@@ -1,0 +1,14 @@
+spring:
+  data:
+    mongodb:
+      uri: ${DB_URL}
+      database: readersDB
+
+readers-club:
+  password-hash: ${ADMIN_PASSWORD_HASH}
+
+logging:
+  level:
+    root: DEBUG
+  file:
+    name: ./log/readers-club.console.log
