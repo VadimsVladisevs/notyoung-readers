@@ -1,60 +1,61 @@
 package org.readersclub.api;
 
+import lombok.extern.slf4j.Slf4j;
 import org.readersclub.exception.BookNotFoundException;
 import org.readersclub.exception.BookStatusNotFoundException;
-import org.readersclub.exception.MissingPropertyException;
-import org.readersclub.exception.ValidationException;
-import org.readersclub.model.ErrorMessage;
+import org.readersclub.exception.InvalidBookStateException;
+import org.readersclub.exception.InvalidPasswordException;
+import org.readersclub.exception.NoBooksFoundException;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.HttpStatusCode;
+import org.springframework.http.ProblemDetail;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.MethodArgumentNotValidException;
-import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
+import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.context.request.WebRequest;
 import org.springframework.web.servlet.mvc.method.annotation.ResponseEntityExceptionHandler;
 
 import java.util.HashMap;
 import java.util.Map;
-import java.util.UUID;
 
-@ControllerAdvice
+@Slf4j
+@RestControllerAdvice
 public class ApiExceptionHandler extends ResponseEntityExceptionHandler {
 
-    @ExceptionHandler(value = {
-            BookStatusNotFoundException.class,
-            BookNotFoundException.class,
-            MissingPropertyException.class,
-            ValidationException.class,
-            Exception.class
-    })
-    public ResponseEntity<ErrorMessage> handleAccessDeniedException(
-            Exception ex, WebRequest request) {
-        return new ResponseEntity<>(
-                ErrorMessage.builder()
-                        .id(UUID.randomUUID())
-                        .title(HttpStatus.BAD_REQUEST.getReasonPhrase())
-                        .status(HttpStatus.BAD_REQUEST.value())
-                        .detail(ex.getMessage())
-                        .build(),
-                new HttpHeaders(),
-                HttpStatus.BAD_REQUEST);
+    @ExceptionHandler({BookNotFoundException.class, NoBooksFoundException.class})
+    public ProblemDetail handleNotFound(RuntimeException ex) {
+        return ProblemDetail.forStatusAndDetail(HttpStatus.NOT_FOUND, ex.getMessage());
+    }
+
+    @ExceptionHandler({BookStatusNotFoundException.class, InvalidPasswordException.class})
+    public ProblemDetail handleBadRequest(RuntimeException ex) {
+        return ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, ex.getMessage());
+    }
+
+    @ExceptionHandler(InvalidBookStateException.class)
+    public ProblemDetail handleConflict(InvalidBookStateException ex) {
+        return ProblemDetail.forStatusAndDetail(HttpStatus.CONFLICT, ex.getMessage());
+    }
+
+    @ExceptionHandler(Exception.class)
+    public ProblemDetail handleUnexpected(Exception ex) {
+        log.error("Unexpected error", ex);
+        return ProblemDetail.forStatusAndDetail(HttpStatus.INTERNAL_SERVER_ERROR, "Unexpected server error");
     }
 
     @Override
     protected ResponseEntity<Object> handleMethodArgumentNotValid(MethodArgumentNotValidException ex,
                                                                   HttpHeaders headers, HttpStatusCode status, WebRequest request) {
-        Map<String, Map<String, String>> body = new HashMap<>();
         Map<String, String> errors = new HashMap<>();
         ex.getBindingResult()
                 .getFieldErrors()
-                .forEach(fieldError -> {
-                    errors.put(fieldError.getField(), fieldError.getDefaultMessage());
-                });
+                .forEach(fieldError -> errors.put(fieldError.getField(), fieldError.getDefaultMessage()));
 
-        body.put("errors", errors); //TODO: replace with POJO class
+        ProblemDetail body = ex.getBody();
+        body.setProperty("errors", errors);
 
-        return new ResponseEntity<>(body, HttpStatus.BAD_REQUEST);
+        return handleExceptionInternal(ex, body, headers, status, request);
     }
 }

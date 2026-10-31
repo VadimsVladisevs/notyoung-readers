@@ -17,7 +17,8 @@ class PasswordServiceTests {
 
     private static PasswordProperties passwordProperties() {
         var properties = new PasswordProperties();
-        properties.setPasswordHash("dummy-hash");
+        // PBKDF2 hash of "club-secret"
+        properties.setPasswordHash("hxBayM0QPqRtgGtmSBx/Tg==");
         return properties;
     }
 
@@ -25,7 +26,9 @@ class PasswordServiceTests {
         return Stream.of(
                 Arguments.of("", false),
                 Arguments.of(null, false),
-                Arguments.of("qwerty", false)
+                Arguments.of("qwerty", false),
+                Arguments.of("Club-secret", false),
+                Arguments.of("club-secret", true)
         );
     }
 

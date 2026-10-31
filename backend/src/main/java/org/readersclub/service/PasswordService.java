@@ -6,8 +6,7 @@ import org.springframework.util.StringUtils;
 
 import javax.crypto.SecretKeyFactory;
 import javax.crypto.spec.PBEKeySpec;
-import java.security.NoSuchAlgorithmException;
-import java.security.spec.InvalidKeySpecException;
+import java.security.GeneralSecurityException;
 import java.security.spec.KeySpec;
 import java.util.Arrays;
 import java.util.Base64;
@@ -21,7 +20,7 @@ public class PasswordService {
         this.passwordProperties = passwordProperties;
     }
 
-    public boolean checkPassword(String password) throws InvalidKeySpecException, NoSuchAlgorithmException {
+    public boolean checkPassword(String password) {
         if (!StringUtils.hasLength(password)) {
             return false;
         }
@@ -31,14 +30,18 @@ public class PasswordService {
         return comparePasswords(hashedPassword);
     }
 
-    private String hashPassword(String password) throws InvalidKeySpecException, NoSuchAlgorithmException {
+    private String hashPassword(String password) {
         byte[] salt = new byte[16];
         Arrays.fill(salt, (byte) 1);
         KeySpec spec = new PBEKeySpec(password.toCharArray(), salt, 65536, 128);
-        SecretKeyFactory f = SecretKeyFactory.getInstance("PBKDF2WithHmacSHA1");
-        byte[] hashBytes = f.generateSecret(spec).getEncoded();
+        try {
+            SecretKeyFactory f = SecretKeyFactory.getInstance("PBKDF2WithHmacSHA1");
+            byte[] hashBytes = f.generateSecret(spec).getEncoded();
 
-        return Base64.getEncoder().encodeToString(hashBytes);
+            return Base64.getEncoder().encodeToString(hashBytes);
+        } catch (GeneralSecurityException e) {
+            throw new IllegalStateException("PBKDF2WithHmacSHA1 is not available", e);
+        }
     }
 
     private boolean comparePasswords(String hashedPassword) {

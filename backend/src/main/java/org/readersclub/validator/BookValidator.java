@@ -1,12 +1,9 @@
 package org.readersclub.validator;
 
-import org.readersclub.exception.ValidationException;
 import org.readersclub.model.BookStatus;
 import org.readersclub.model.dto.BookDto;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
-
-import java.awt.geom.Arc2D;
 
 @Component
 public class BookValidator {

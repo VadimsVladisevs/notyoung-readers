@@ -3,6 +3,7 @@ package org.readersclub.service;
 import lombok.RequiredArgsConstructor;
 import org.readersclub.exception.BookNotFoundException;
 import org.readersclub.exception.BookStatusNotFoundException;
+import org.readersclub.exception.NoBooksFoundException;
 import org.readersclub.model.Book;
 import org.readersclub.model.BookStatus;
 import org.readersclub.model.dto.BookDto;
@@ -11,8 +12,10 @@ import org.readersclub.model.dto.FinishBookDto;
 import org.readersclub.repository.BookRepository;
 import org.readersclub.validator.BookValidator;
 import org.springframework.stereotype.Service;
+import org.springframework.util.CollectionUtils;
 
 import java.util.*;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.stream.Collectors;
 
 @Service
@@ -26,8 +29,8 @@ public class BookService {
         return bookRepository.findAll();
     }
 
-    //    public List<Book> getBooksByStatus(BookStatus status) throws BookStatusNotFoundException {
-    public List<Book> getBooksByStatus(String status) throws BookStatusNotFoundException {
+    //    public List<Book> getBooksByStatus(BookStatus status) {
+    public List<Book> getBooksByStatus(String status) {
         if (!bookValidator.isValidBookStatus(status)) {
             throw new BookStatusNotFoundException(status);
         }
@@ -35,13 +38,13 @@ public class BookService {
         return bookRepository.findByStatus(status);
     }
 
-    public Book getBookById(String id) throws BookNotFoundException {
+    public Book getBookById(String id) {
         return bookRepository.findById(id).orElseThrow(
                 () -> new BookNotFoundException(id)
         );
     }
 
-    public void deleteBookById(String id) throws BookNotFoundException {
+    public void deleteBookById(String id) {
         Book book = getBookById(id);
         bookRepository.deleteById(id);
     }
@@ -60,6 +63,7 @@ public class BookService {
     public Book updateAndSave(Book book, BookDto bookDto) {
         return bookRepository.save(Book.builder()
                 .id(book.getId())
+                .createdAt(book.getCreatedAt())
                 .title(Optional.ofNullable(bookDto.title()).orElse(book.getTitle()))
                 .author(Optional.ofNullable(bookDto.author()).orElse(book.getAuthor()))
                 .image(Optional.ofNullable(bookDto.image()).orElse(book.getImage()))
@@ -83,16 +87,20 @@ public class BookService {
         return bookRepository.save(book);
     }
 
-    public List<String> getAllBooksById() {
-        return bookRepository.findAll().stream()
-                .map(Book::getId)
-                .toList();
+    public Book getRandomBook(List<String> bookIds) {
+        if (CollectionUtils.isEmpty(bookIds)) {
+            return pickRandom(bookRepository.findByStatus(BookStatus.NEW.getValue()));
+        }
+
+        return getBookById(pickRandom(bookIds));
     }
 
-    public String getRandomFromList(List<String> list) {
-        Random random = new Random();
+    private static <T> T pickRandom(List<T> list) {
+        if (list.isEmpty()) {
+            throw new NoBooksFoundException();
+        }
 
-        return list.get(random.nextInt(list.size()));
+        return list.get(ThreadLocalRandom.current().nextInt(list.size()));
     }
 
     public Map<String, Integer> getStatistics() {

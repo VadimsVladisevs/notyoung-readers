@@ -16,6 +16,6 @@ public class BookStatusTypeSubSetValidator implements ConstraintValidator<ValidB
 
     @Override
     public boolean isValid(BookStatus value, ConstraintValidatorContext context) {
-        return value != null || Arrays.asList(subset).contains(value);
+        return value != null && Arrays.asList(subset).contains(value);
     }
 }
