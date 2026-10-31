@@ -2,6 +2,10 @@ spring:
   mongodb:
     uri: ${DB_URL:mongodb://localhost:27017/readersDB}
 
+# Dev-only default: test hash for password "club-secret". Set ADMIN_PASSWORD_HASH to use another.
+readers-club:
+  password-hash: '${ADMIN_PASSWORD_HASH:$2a$04$abDVDCCBrxHefMnW2MlYw.Ur41qnEcwu6CCGLV4vkwsv4/3RJ0eqK}'
+
 logging:
   level:
     org.readersclub: DEBUG

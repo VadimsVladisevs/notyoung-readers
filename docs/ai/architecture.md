@@ -6,6 +6,7 @@
 | Legacy app | repo root: `app.js`, `modules/db.js`, `index.html`, `public/` (jQuery + 163 covers in `public/images/`) | **Production** on Render (Heroku-style `Procfile`), MongoDB Atlas. Frozen until cutover (Phase 7) |
 | Backend | `backend/` | Spring Boot REST API under `/api`. Not deployed yet |
 | Frontend | `frontend/` | React SPA; calls relative `/api/...` URLs (dev proxy → `:8080`). Not deployed yet |
+| Local MongoDB | `compose.yaml` (repo root) | Dev only: `mongo:8.0` on `127.0.0.1:27017`, no auth, volume `readersclub_mongo-data`. Run steps in the root `README.md` |
 
 Target (Phase 6): one Docker image where Spring Boot serves the built SPA, on Render, against the **same Atlas data**. Until Phase 8, cover images stay files at `images/<name>.jpg`; the book's `image` field holds that relative path.
 
