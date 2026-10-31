@@ -6,9 +6,10 @@
 | Legacy app | repo root: `app.js`, `modules/db.js`, `index.html`, `public/` (jQuery + 163 covers in `public/images/`) | **Production** on Render (Heroku-style `Procfile`), MongoDB Atlas. Frozen until cutover (Phase 7) |
 | Backend | `backend/` | Spring Boot REST API under `/api`. Not deployed yet |
 | Frontend | `frontend/` | React SPA; calls relative `/api/...` URLs (dev proxy → `:8080`). Not deployed yet |
+| App image | `Dockerfile`, `.dockerignore` (allow-list), `render.yaml` (repo root) | Node stage builds `frontend/dist` + copies repo-root `public/images` → Maven stage puts it in `static/` and packages the jar → `eclipse-temurin:25-jre`, non-root, JVM flags for 512 MB. Spring serves `/` (`index.html`), `/assets/**`, `/images/**`, `/api/**`, `/actuator/health`. No SPA fallback (no client router). `render.yaml` defines only the **staging** service (`readers-club-staging`, Free, branch `migration/spring-react`, DB `readersDB_staging`) |
 | Local MongoDB | `compose.yaml` (repo root) | Dev only: `mongo:8.0` on `127.0.0.1:27017`, no auth, volume `readersclub_mongo-data`. Run steps in the root `README.md` |
 
-Target (Phase 6): one Docker image where Spring Boot serves the built SPA, on Render, against the **same Atlas data**. Until Phase 8, cover images stay files at `images/<name>.jpg`; the book's `image` field holds that relative path.
+Target: the app image on Render against the **same Atlas data** (staging in Phase 6 on a copy, `readersDB_staging`; prod at cutover, Phase 7). Until Phase 8, cover images stay files at `images/<name>.jpg`; the book's `image` field holds that relative path.
 
 ## Data model
 MongoDB database `readersDB`, collection **`books`**, shared with the legacy app. **Keep it compatible with the legacy app:** both apps read and write this collection until cutover, so no schema migration.
@@ -16,7 +17,7 @@ MongoDB database `readersDB`, collection **`books`**, shared with the legacy app
 | Field | Type | Notes |
 |---|---|---|
 | `_id` | ObjectId | `Book.id` (String) |
-| `title`, `author`, `tag` | string | Legacy Mongoose put a unique index on `title`; the new app creates no indexes |
+| `title`, `author`, `tag` | string | Legacy Mongoose declares a unique index on `title`, but **prod has none** (only `_id`, checked Phase 6); the new app creates no indexes |
 | `image` | string | `images/<file>.jpg` (validated on create/update) |
 | `status` | string | Lowercase `new` / `progress` / `finished`. Mapped to `BookStatus` by `BookWritingConverter` / `BookStatusReadingConverter` |
 | `wiki` | string | Link; **missing in some legacy docs** |

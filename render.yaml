@@ -1,0 +1,17 @@
+# Render Blueprint. Staging only for now; prod switches to Docker at cutover (Phase 7).
+services:
+  - type: web
+    name: readers-club-staging
+    runtime: docker
+    plan: free
+    branch: migration/spring-react
+    dockerfilePath: ./Dockerfile
+    healthCheckPath: /actuator/health
+    envVars:
+      - key: DB_NAME
+        value: readersDB_staging
+      # Secrets: entered in the Render dashboard, never in the repo
+      - key: DB_URL
+        sync: false
+      - key: ADMIN_PASSWORD_HASH
+        sync: false

@@ -1,0 +1,14 @@
+# Allow-list: only what the Dockerfile copies goes into the build context.
+*
+!backend/mvnw
+!backend/pom.xml
+!backend/.mvn/
+!backend/src/
+!frontend/
+!public/images/
+
+frontend/node_modules/
+frontend/dist/
+frontend/coverage/
+**/.env*
+**/*.log

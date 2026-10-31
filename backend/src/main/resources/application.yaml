@@ -4,10 +4,19 @@ server:
 spring:
   mongodb:
     uri: ${DB_URL}
-    database: readersDB
+    database: ${DB_NAME:readersDB}
 
 readers-club:
   password-hash: ${ADMIN_PASSWORD_HASH}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health
+  endpoint:
+    health:
+      show-details: never
 
 logging:
   level:

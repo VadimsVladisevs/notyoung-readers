@@ -29,6 +29,9 @@ Spring Boot 4.1 (Spring Framework 7, Jackson 3), Java 25 (Temurin), Maven wrappe
 | `DB_URL` | `spring.mongodb.uri` | Boot 4 prefix is `spring.mongodb.*`, **not** `spring.data.mongodb.*` |
 | `ADMIN_PASSWORD_HASH` | `readers-club.password-hash` | Required outside `dev`. Must be a **bcrypt** hash (`$2a$`/`$2b$`/`$2y$`); anything else fails at startup (`@Validated` `PasswordProperties`). Prod value: the legacy `users.admin` hash |
 | `PORT` | `server.port` | Default 8080 |
+| `DB_NAME` | `spring.mongodb.database` | Default `readersDB`. Wins over a database path in `DB_URL`. Staging sets `readersDB_staging` |
+
+Actuator exposes **only** `/actuator/health`, status without details (`{"status":"UP"}`); public, because security only guards `/api/**`. Render's health check uses it. `ActuatorTests` keeps the other endpoints hidden.
 
 Profile `dev` (`application-dev.yaml`): `DB_URL` defaults to `mongodb://localhost:27017/readersDB` (the compose Mongo), and `ADMIN_PASSWORD_HASH` defaults to the test hash for `club-secret`. Env vars override both. `./mvnw spring-boot:run` turns on `dev` by itself (`spring-boot-maven-plugin` `<profiles>` in `pom.xml`); the packaged jar does not.
 
