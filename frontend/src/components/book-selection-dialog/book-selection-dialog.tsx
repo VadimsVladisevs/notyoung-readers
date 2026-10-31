@@ -111,33 +111,35 @@ const BookSelectionDialog: React.FC<BookSelectionDialogProps> = ({
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             sx={styles.searchFieldStyles}
-            InputProps={{
-              startAdornment: (
-                <InputAdornment position="start">
-                  <SearchIcon />
-                </InputAdornment>
-              ),
-              endAdornment: (
-                <InputAdornment position="end">
-                  <Select
-                    value={searchFilter}
-                    onChange={(e) => setSearchFilter(e.target.value as SearchFilterOption)}
-                    variant="standard"
-                    disableUnderline
-                    sx={styles.searchFilterSelectStyles}
-                  >
-                    <MenuItem value={SEARCH_FILTER_OPTIONS.TAG}>
-                      {t('dialogs.bookSelection.searchFilters.tag')}
-                    </MenuItem>
-                    <MenuItem value={SEARCH_FILTER_OPTIONS.TITLE}>
-                      {t('dialogs.bookSelection.searchFilters.title')}
-                    </MenuItem>
-                    <MenuItem value={SEARCH_FILTER_OPTIONS.AUTHOR}>
-                      {t('dialogs.bookSelection.searchFilters.author')}
-                    </MenuItem>
-                  </Select>
-                </InputAdornment>
-              ),
+            slotProps={{
+              input: {
+                startAdornment: (
+                  <InputAdornment position="start">
+                    <SearchIcon />
+                  </InputAdornment>
+                ),
+                endAdornment: (
+                  <InputAdornment position="end">
+                    <Select
+                      value={searchFilter}
+                      onChange={(e) => setSearchFilter(e.target.value as SearchFilterOption)}
+                      variant="standard"
+                      disableUnderline
+                      sx={styles.searchFilterSelectStyles}
+                    >
+                      <MenuItem value={SEARCH_FILTER_OPTIONS.TAG}>
+                        {t('dialogs.bookSelection.searchFilters.tag')}
+                      </MenuItem>
+                      <MenuItem value={SEARCH_FILTER_OPTIONS.TITLE}>
+                        {t('dialogs.bookSelection.searchFilters.title')}
+                      </MenuItem>
+                      <MenuItem value={SEARCH_FILTER_OPTIONS.AUTHOR}>
+                        {t('dialogs.bookSelection.searchFilters.author')}
+                      </MenuItem>
+                    </Select>
+                  </InputAdornment>
+                ),
+              },
             }}
           />
           <Box sx={styles.cardsContainerStyles}>

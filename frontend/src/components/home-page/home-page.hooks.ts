@@ -26,44 +26,37 @@ export const useHomePage = () => {
     setSelectionDialogOpen(false);
   }, []);
 
+  // Always goes through the approval dialog: every write needs the club password.
+  // With no current book the dialog asks only for the password (not used by the club today).
   const handleSelectBook = useCallback(async (book: Book) => {
-    // If there's a current book, we need approval with rating and password
-    if (currentBook) {
-      setPendingNewBook(book);
-      setApprovalDialogOpen(true);
-    } else {
-      // No current book, just start the new one
-      await api.startBook(book.id);
-      await refreshBooks();
-      setSelectionDialogOpen(false);
-    }
-  }, [currentBook, refreshBooks]);
+    setPendingNewBook(book);
+    setApprovalDialogOpen(true);
+  }, []);
 
   const handleCloseApprovalDialog = useCallback(() => {
     setApprovalDialogOpen(false);
     setPendingNewBook(null);
   }, []);
 
-  const handleApprovalConfirm = useCallback(async (rating: number, password: string) => {
-    const checkResult = await api.checkPassword(password);
-    if (!checkResult.result) {
-      throw new Error('Wrong password');
+  const handleApprovalConfirm = useCallback(async (rating: number | null, password: string) => {
+    if (!pendingNewBook) return;
+    if (!(await api.checkPassword(password))) {
+      throw new api.ApiError(401);
     }
 
-    if (currentBook && pendingNewBook) {
-      await api.finishBook(currentBook.id, rating);
-      await api.startBook(pendingNewBook.id);
+    try {
+      if (currentBook && rating !== null) {
+        await api.finishBook(currentBook.id, rating, password);
+      }
+      await api.startBook(pendingNewBook.id, password);
+    } finally {
+      // Refresh even after a failure: finish may have worked when start didn't.
       await refreshBooks();
-      setApprovalDialogOpen(false);
-      setSelectionDialogOpen(false);
-      setPendingNewBook(null);
     }
+    setApprovalDialogOpen(false);
+    setSelectionDialogOpen(false);
+    setPendingNewBook(null);
   }, [currentBook, pendingNewBook, refreshBooks]);
-
-  const handleFinishBook = useCallback(async (bookId: string, rating?: number | null) => {
-    await api.finishBook(bookId, rating ?? undefined);
-    await refreshBooks();
-  }, [refreshBooks]);
 
   const handleGetRandomBook = useCallback(async () => {
     return await api.getRandomBook();
@@ -92,7 +85,6 @@ export const useHomePage = () => {
     handleSelectBook,
     handleCloseApprovalDialog,
     handleApprovalConfirm,
-    handleFinishBook,
     handleGetRandomBook,
     handleOpenStatistics,
     handleCloseStatistics,

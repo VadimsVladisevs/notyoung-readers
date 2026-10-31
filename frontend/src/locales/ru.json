@@ -35,23 +35,13 @@
       "confirmSelectedButton": "Подтвердить",
       "selectBookButton": "Выбрать",
       "closeButton": "Отмена",
-      "confirmTitle": "Подтверждение выбора",
       "confirmMessage": "Вы хотите выбрать книгу \"{title}\"?",
-      "confirmButton": "Подтвердить",
-      "cancelButton": "Отмена",
       "noSelectedError": "Добавьте книжки для выбора",
       "searchFilters": {
         "tag": "Участник",
         "title": "Название",
         "author": "Автор"
       }
-    },
-    "confirmBook": {
-      "title": "Завершить книгу",
-      "message": "Вы закончили читать \"{title}\"?",
-      "ratingLabel": "Ваша оценка:",
-      "cancelButton": "Отмена",
-      "confirmButton": "Подтвердить"
     },
     "randomBook": {
       "title": "Случайная книга",
@@ -64,6 +54,8 @@
       "passwordLabel": "Код подтверждения",
       "passwordRequired": "Введите код подтверждения",
       "wrongPassword": "Неправильный пароль!",
+      "ratingRequired": "Введите оценку от 1 до 10",
+      "saveFailed": "Не удалось сохранить. Попробуйте ещё раз.",
       "cancelButton": "Отмена",
       "confirmButton": "Подтвердить"
     },

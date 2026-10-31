@@ -45,6 +45,8 @@ Errors are RFC 9457 `ProblemDetail` (`application/problem+json`): `title`, `stat
 | `GET /api/statistics` | | 200 `{"statistics": {tag: count}}`, count of non-`new` books, sorted desc; a tag with only `new` books → 0 | |
 | `POST /api/check-password` | `X-Club-Password` header (no body or params) | 200 | 401 wrong, blank or missing |
 
-All rows except the `GET`s also return 401 without the right header (see Auth above). The current UI still sends `check-password` as form data and sends no header on writes; Phase 4 fixes that.
+All rows except the `GET`s also return 401 without the right header (see Auth above). The UI sends the header on every write and checks the password with `check-password` first (see [frontend.md](frontend.md)).
+
+`POST /api/books/add` rejects a missing `wiki` (400), although some legacy books have none (found in Phase 4). Send `""` when copying such books.
 
 The legacy app's endpoints (`/books`, `/finish`, `/start`, `/addbook`, ...) are in [legacy-analysis.md](legacy-analysis.md); the new API is not a drop-in replacement for them.

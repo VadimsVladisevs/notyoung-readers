@@ -2,6 +2,8 @@ import { SxProps, Theme } from '@mui/material';
 
 export const containerStyles: SxProps<Theme> = {
   py: 4,
+  // Anchor scroll lands the heading below the fixed navbar (up to 93px tall on desktop).
+  scrollMarginTop: '48px',
 };
 
 export const titleStyles: SxProps<Theme> = {

@@ -1,9 +1,17 @@
 import { useState, useCallback, useEffect } from 'react';
 import { t } from '../../i18n';
+import { ApiError } from '../../services/api';
+
+/** The current book's rating as typed (comma or dot), or null unless it's within 1–10. */
+export const parseRating = (value: string): number | null => {
+  const rating = Number(value.replace(',', '.'));
+  return value.trim() !== '' && rating >= 1 && rating <= 10 ? rating : null;
+};
 
 export const useApprovalDialog = (
   open: boolean,
-  onConfirm: (rating: number, password: string) => Promise<void>
+  ratingRequired: boolean,
+  onConfirm: (rating: number | null, password: string) => Promise<void>
 ) => {
   const [rating, setRating] = useState<string>('');
   const [password, setPassword] = useState('');
@@ -31,6 +39,11 @@ export const useApprovalDialog = (
   }, []);
 
   const handleConfirm = useCallback(async () => {
+    const ratingValue = parseRating(rating);
+    if (ratingRequired && ratingValue === null) {
+      setError(t('dialogs.approval.ratingRequired'));
+      return;
+    }
     if (!password) {
       setError(t('dialogs.approval.passwordRequired'));
       return;
@@ -40,16 +53,16 @@ export const useApprovalDialog = (
     setError(null);
 
     try {
-      const ratingValue = parseFloat(rating.replace(',', '.')) || 0;
       await onConfirm(ratingValue, password);
       setRating('');
       setPassword('');
     } catch (err) {
-      setError(t('dialogs.approval.wrongPassword'));
+      const wrongPassword = err instanceof ApiError && err.status === 401;
+      setError(t(wrongPassword ? 'dialogs.approval.wrongPassword' : 'dialogs.approval.saveFailed'));
     } finally {
       setLoading(false);
     }
-  }, [password, rating, onConfirm]);
+  }, [password, rating, ratingRequired, onConfirm]);
 
   const resetForm = useCallback(() => {
     setRating('');

@@ -6,7 +6,9 @@ export const appBarStyles: SxProps<Theme> = {
 
 export const brandTypographyStyles: SxProps<Theme> = {
   mr: 4,
-  display: { xs: 'none', md: 'flex' },
+  // Desktop nav needs ~1150px; below lg the hamburger layout is used.
+  display: { xs: 'none', lg: 'flex' },
+  flexShrink: 0,
   fontWeight: 700,
   color: 'inherit',
   textDecoration: 'none',
@@ -14,8 +16,11 @@ export const brandTypographyStyles: SxProps<Theme> = {
 
 export const mobileBrandTypographyStyles: SxProps<Theme> = {
   mr: 2,
-  display: { xs: 'flex', md: 'none' },
+  display: { xs: 'flex', lg: 'none' },
   flexGrow: 1,
+  // Fits next to the menu button at phone width; wraps on the narrowest phones.
+  fontSize: { xs: '0.9rem', sm: '1.5rem' },
+  whiteSpace: { xs: 'normal', sm: 'nowrap' },
   fontWeight: 700,
   color: 'inherit',
   textDecoration: 'none',
@@ -55,29 +60,29 @@ export const iconButtonStyles: SxProps<Theme> = {
 };
 
 export const drawerStyles: SxProps<Theme> = {
-  display: { xs: 'block', md: 'none' },
+  display: { xs: 'block', lg: 'none' },
   '& .MuiDrawer-paper': { boxSizing: 'border-box', width: 280 },
 };
 
 export const desktopIconStyles: SxProps<Theme> = {
-  display: { xs: 'none', md: 'flex' },
+  display: { xs: 'none', lg: 'flex' },
   mr: 1,
 };
 
 export const mobileIconStyles: SxProps<Theme> = {
-  display: { xs: 'flex', md: 'none' },
+  display: { xs: 'flex', lg: 'none' },
   mr: 1,
 };
 
 export const desktopNavContainerStyles: SxProps<Theme> = {
   flexGrow: 1,
-  display: { xs: 'none', md: 'flex' },
+  display: { xs: 'none', lg: 'flex' },
   justifyContent: 'flex-end',
 };
 
 export const mobileNavContainerStyles: SxProps<Theme> = {
   flexGrow: 1,
-  display: { xs: 'flex', md: 'none' },
+  display: { xs: 'flex', lg: 'none' },
 };
 
 export const discordIconStyles: SxProps<Theme> = {

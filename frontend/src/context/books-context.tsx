@@ -9,7 +9,6 @@ interface BooksContextType {
   finishedBooks: Book[];
   loading: boolean;
   error: string | null;
-  setCurrentBook: (book: Book | null) => void;
   refreshBooks: () => Promise<void>;
 }
 
@@ -47,10 +46,6 @@ export const BooksProvider: React.FC<BooksProviderProps> = ({ children }) => {
   const currentBook = allBooks.find(book => book.status === 'progress') || null;
   const finishedBooks = allBooks.filter(book => book.status === 'finished');
 
-  const setCurrentBook = useCallback((book: Book | null) => {
-    // This will be handled by refreshBooks after API call
-  }, []);
-
   const refreshBooks = useCallback(async () => {
     await fetchBooks();
   }, [fetchBooks]);
@@ -62,7 +57,6 @@ export const BooksProvider: React.FC<BooksProviderProps> = ({ children }) => {
     finishedBooks,
     loading,
     error,
-    setCurrentBook,
     refreshBooks,
   };
 

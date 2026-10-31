@@ -1,4 +1,0 @@
-export const CONFIRM_BOOK_DIALOG_CONSTANTS = {
-  MAX_RATING: 5,
-  RATING_PRECISION: 0.5,
-} as const;

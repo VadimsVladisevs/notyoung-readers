@@ -38,7 +38,7 @@ const CurrentBook: React.FC<CurrentBookProps> = ({ book, onSelectClick }) => {
             </Box>
           </Box>
         ) : (
-          <Box textAlign="center">
+          <Box sx={{ textAlign: 'center' }}>
             <Typography variant="h5" sx={styles.placeholderTitleStyles}>
               {t('sections.currentBook.noBook')}
             </Typography>
