@@ -1,10 +1,16 @@
-import { render, screen, waitFor, within } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { http, HttpResponse } from 'msw';
 import App from './App';
 import { server } from './test/server';
 import { allBooks, current, finishedHigh, finishedLow, newAnna, newBoris } from './test/books';
 import { CSRF_HEADER } from './services/api';
+import { Book } from './types';
+
+// jsdom has no canvas.
+vi.mock('react-chartjs-2', () => ({
+  Bar: () => <output data-testid="chart" />,
+}));
 
 const ADMIN = { username: 'admin', roles: ['ADMIN'] };
 const PASSWORD = 'secret';
@@ -739,5 +745,124 @@ describe('App', () => {
       expect(within(dialog).getByRole('button', { name: 'Сохранить' })).toBeInTheDocument();
       expect(calls).toEqual([]);
     });
+  });
+  describe('library filter', () => {
+    const library = () => within(document.getElementById('library')!);
+    // Sorted: the order is the books context's, not the point here.
+    const covers = () => library().queryAllByRole('img').map((img) => img.getAttribute('alt')).sort();
+
+    it('finds books by title, author or member, ignoring case and ё', async () => {
+      const user = await renderApp({ loggedIn: false });
+      const search = screen.getByRole('searchbox', { name: 'Поиск по названию, автору или участнику' });
+
+      await user.type(search, 'ГОГОЛЬ');
+      expect(covers()).toEqual([finishedLow.title]);
+
+      await user.clear(search);
+      await user.type(search, 'борис');
+      expect(covers()).toEqual([current.title, newBoris.title, finishedHigh.title].sort());
+    });
+
+    it('filters by status and says when nothing matches', async () => {
+      const user = await renderApp({ loggedIn: false });
+
+      await user.click(library().getByRole('button', { name: 'Читаем' }));
+      expect(covers()).toEqual([current.title]);
+      expect(library().getByRole('button', { name: 'Читаем' })).toHaveAttribute('aria-pressed', 'true');
+
+      await user.type(screen.getByRole('searchbox'), 'гоголь');
+      expect(covers()).toEqual([]);
+      expect(library().getByText('Ничего не найдено')).toBeInTheDocument();
+
+      await user.click(library().getByRole('button', { name: 'Все' }));
+      expect(covers()).toEqual([finishedLow.title]);
+    });
+
+    it('labels the current and the finished books on their covers', async () => {
+      await renderApp({ loggedIn: false });
+
+      const cover = (title: string) => within(library().getByRole('img', { name: title }).parentElement!);
+
+      expect(cover(current.title).getByText('Читаем')).toBeInTheDocument();
+      expect(cover(finishedHigh.title).getByText('Прочитана · 9')).toBeInTheDocument();
+      expect(cover(finishedLow.title).getByText('Прочитана · 7.5')).toBeInTheDocument();
+      expect(cover(newAnna.title).queryByText(/Читаем|Прочитана/)).not.toBeInTheDocument();
+    });
+  });
+
+  describe('finished books', () => {
+    const finished = (n: number): Book[] => Array.from({ length: n }, (_, i) => ({
+      ...finishedHigh, id: `fx${i}`, title: `Книга ${i + 1}`, rating: 10 - i / 2,
+    }));
+    const shownTitles = () => within(document.getElementById('finished-books')!).getAllByRole('heading', { level: 4 });
+
+    it('shows ten, then ten more per «Показать ещё»', async () => {
+      server.use(http.get('/api/books', () => HttpResponse.json([current, finishedHigh, ...finished(11)])));
+      const user = await renderApp({ loggedIn: false });
+
+      expect(shownTitles()).toHaveLength(10);
+      await user.click(screen.getByRole('button', { name: 'Показать ещё' }));
+
+      expect(shownTitles()).toHaveLength(12);
+      expect(screen.queryByRole('button', { name: 'Показать ещё' })).not.toBeInTheDocument();
+    });
+
+    it('has no «Показать ещё» for ten or fewer', async () => {
+      await renderApp({ loggedIn: false });
+
+      expect(screen.queryByRole('button', { name: 'Показать ещё' })).not.toBeInTheDocument();
+    });
+  });
+
+  describe('long descriptions', () => {
+    afterEach(() => vi.restoreAllMocks());
+
+    it('offers «Читать дальше» only for a description that is cut off', async () => {
+      await renderApp({ loggedIn: false });
+
+      // jsdom has no layout: every element measures 0, so nothing is cut off.
+      expect(screen.queryByRole('button', { name: 'Читать дальше' })).not.toBeInTheDocument();
+    });
+
+    it('expands and collapses a cut-off description', async () => {
+      vi.spyOn(HTMLElement.prototype, 'scrollHeight', 'get').mockReturnValue(400);
+      vi.spyOn(HTMLElement.prototype, 'clientHeight', 'get').mockReturnValue(100);
+      const user = await renderApp({ loggedIn: false });
+      const section = within(document.getElementById('in-progress')!);
+
+      await user.click(section.getByRole('button', { name: 'Читать дальше' }));
+      expect(section.getByRole('button', { name: 'Свернуть' })).toHaveAttribute('aria-expanded', 'true');
+
+      await user.click(section.getByRole('button', { name: 'Свернуть' }));
+      expect(section.getByRole('button', { name: 'Читать дальше' })).toHaveAttribute('aria-expanded', 'false');
+    });
+  });
+
+  describe('back to top', () => {
+    afterEach(() => {
+      Object.defineProperty(window, 'pageYOffset', { value: 0, configurable: true });
+      vi.restoreAllMocks();
+    });
+
+    it('shows after scrolling down and scrolls back up', async () => {
+      const scrollTo = vi.spyOn(window, 'scrollTo').mockImplementation(() => {});
+      const user = await renderApp({ loggedIn: false });
+      expect(screen.queryByRole('button', { name: 'Наверх' })).not.toBeInTheDocument();
+
+      Object.defineProperty(window, 'pageYOffset', { value: 1000, configurable: true });
+      fireEvent.scroll(window);
+      await user.click(await screen.findByRole('button', { name: 'Наверх' }));
+
+      expect(scrollTo).toHaveBeenCalledWith({ top: 0, behavior: 'smooth' });
+    });
+  });
+
+  it('loads the statistics dialog when it is opened', async () => {
+    const user = await renderApp({ loggedIn: false });
+
+    await user.click(screen.getAllByRole('button', { name: 'Статистика' })[0]);
+
+    expect(await screen.findByRole('dialog', { name: /Статистика/ })).toBeInTheDocument();
+    expect(screen.getByTestId('chart')).toBeInTheDocument();
   });
 });

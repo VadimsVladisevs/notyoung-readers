@@ -19,7 +19,17 @@
     "library": {
       "title": "Библиотека клуба",
       "prev": "Назад",
-      "next": "Вперёд"
+      "next": "Вперёд",
+      "searchLabel": "Поиск по названию, автору или участнику",
+      "statusFilter": "Статус книг",
+      "filterAll": "Все",
+      "filterNew": "В списке",
+      "filterProgress": "Читаем",
+      "filterFinished": "Прочитаны",
+      "notFound": "Ничего не найдено",
+      "statusProgress": "Читаем",
+      "statusFinished": "Прочитана",
+      "statusFinishedRating": "Прочитана · {rating}"
     },
     "currentBook": {
       "title": "Выбранная книжка",
@@ -30,8 +40,12 @@
       "selectButton": "Выбрать книгу"
     },
     "finishedBooks": {
-      "title": "Прочитанные книжки"
-    }
+      "title": "Прочитанные книжки",
+      "showMore": "Показать ещё"
+    },
+    "readMore": "Читать дальше",
+    "readLess": "Свернуть",
+    "backToTop": "Наверх"
   },
   "dialogs": {
     "bookSelection": {

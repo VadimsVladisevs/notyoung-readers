@@ -70,3 +70,14 @@ export const editButtonStyles: SxProps<Theme> = {
   ml: 1,
   verticalAlign: 'middle',
 };
+
+export const showMoreContainerStyles: SxProps<Theme> = {
+  display: 'flex',
+  justifyContent: 'center',
+  mt: { xs: 4, md: 6 },
+};
+
+export const showMoreButtonStyles: SxProps<Theme> = {
+  textTransform: 'none',
+  px: 4,
+};

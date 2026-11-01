@@ -6,6 +6,7 @@ import { CURRENT_BOOK_CONSTANTS } from './current-book.constants';
 import * as styles from './current-book.styles';
 import { coverSrc } from '../../utils/cover';
 import EditBookButton from '../edit-book-button';
+import ExpandableText from '../expandable-text';
 
 export interface CurrentBookProps {
   book: Book | null;
@@ -30,9 +31,11 @@ const CurrentBook: React.FC<CurrentBookProps> = ({ book, onSelectClick, onEdit }
                 {book.author}. {book.title}
                 {onEdit && <EditBookButton book={book} onEdit={onEdit} sx={styles.editButtonStyles} />}
               </Typography>
-              <Typography variant="body1" sx={styles.bookDescriptionStyles}>
-                {book.wiki}
-              </Typography>
+              <ExpandableText
+                text={book.wiki}
+                lines={CURRENT_BOOK_CONSTANTS.DESCRIPTION_LINES}
+                sx={styles.bookDescriptionStyles}
+              />
             </Box>
             <Box sx={styles.imageContainerStyles}>
               <Box

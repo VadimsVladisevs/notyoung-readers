@@ -9,3 +9,11 @@ export const LIBRARY_SWIPER_CONSTANTS = {
   DESKTOP_FROM: 900,
   MIN_SLIDES_FOR_LOOP: 8,
 } as const;
+
+/** The status chips above the swiper, in order. */
+export const LIBRARY_FILTERS = [
+  { value: 'all', labelKey: 'sections.library.filterAll' },
+  { value: 'new', labelKey: 'sections.library.filterNew' },
+  { value: 'progress', labelKey: 'sections.library.filterProgress' },
+  { value: 'finished', labelKey: 'sections.library.filterFinished' },
+] as const;

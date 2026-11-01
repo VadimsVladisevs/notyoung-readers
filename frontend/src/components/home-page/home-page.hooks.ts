@@ -27,6 +27,8 @@ export const useHomePage = () => {
 
   const [selectionDialogOpen, setSelectionDialogOpen] = useState(false);
   const [statisticsDialogOpen, setStatisticsDialogOpen] = useState(false);
+  // Stays true after the first open, so the lazy dialog isn't loaded before it's needed.
+  const [statisticsDialogMounted, setStatisticsDialogMounted] = useState(false);
   const [approvalDialogOpen, setApprovalDialogOpen] = useState(false);
   const [pendingNewBook, setPendingNewBook] = useState<Book | null>(null);
   const [loginDialogOpen, setLoginDialogOpen] = useState(false);
@@ -89,6 +91,7 @@ export const useHomePage = () => {
   }, []);
 
   const handleOpenStatistics = useCallback(() => {
+    setStatisticsDialogMounted(true);
     setStatisticsDialogOpen(true);
   }, []);
 
@@ -198,6 +201,7 @@ export const useHomePage = () => {
     handleToggleEditMode,
     selectionDialogOpen,
     statisticsDialogOpen,
+    statisticsDialogMounted,
     approvalDialogOpen,
     pendingNewBook,
     handleOpenSelectionDialog,

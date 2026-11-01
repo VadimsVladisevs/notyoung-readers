@@ -1,11 +1,13 @@
 import React from 'react';
-import { Box, Typography, Container, Divider } from '@mui/material';
+import { Box, Typography, Container, Divider, Button } from '@mui/material';
 import { Book } from '../../types';
 import { t } from '../../i18n';
 import { FINISHED_BOOKS_CONSTANTS } from './finished-books.constants';
 import * as styles from './finished-books.styles';
 import { coverSrc } from '../../utils/cover';
 import EditBookButton from '../edit-book-button';
+import ExpandableText from '../expandable-text';
+import { useFinishedBooks } from './finished-books.hooks';
 
 export interface FinishedBooksProps {
   books: Book[];
@@ -14,6 +16,8 @@ export interface FinishedBooksProps {
 }
 
 const FinishedBooks: React.FC<FinishedBooksProps> = ({ books, onEdit }) => {
+  const { visible, hasMore, showMore } = useFinishedBooks(books.length);
+
   return (
     <Box id={FINISHED_BOOKS_CONSTANTS.SECTION_ID} sx={styles.containerStyles}>
       <Container maxWidth="lg">
@@ -21,7 +25,7 @@ const FinishedBooks: React.FC<FinishedBooksProps> = ({ books, onEdit }) => {
           {t('sections.finishedBooks.title')}
         </Typography>
 
-        {books.map((book, index) => (
+        {books.slice(0, visible).map((book, index) => (
           <React.Fragment key={book.id}>
             <Divider sx={styles.dividerStyles} />
             <Box sx={index % 2 === 0 ? styles.featuretteRowStyles : styles.featuretteRowReverseStyles}>
@@ -30,9 +34,11 @@ const FinishedBooks: React.FC<FinishedBooksProps> = ({ books, onEdit }) => {
                   {index + 1}. {book.title}. {book.author}
                   {onEdit && <EditBookButton book={book} onEdit={onEdit} sx={styles.editButtonStyles} />}
                 </Typography>
-                <Typography variant="body1" sx={styles.featuretteDescStyles}>
-                  {book.wiki}
-                </Typography>
+                <ExpandableText
+                  text={book.wiki}
+                  lines={FINISHED_BOOKS_CONSTANTS.DESCRIPTION_LINES}
+                  sx={styles.featuretteDescStyles}
+                />
                 <Typography variant="body1" sx={styles.ratingTextStyles}>
                   Оценка клуба - {book.rating ?? '-'}
                 </Typography>
@@ -48,6 +54,14 @@ const FinishedBooks: React.FC<FinishedBooksProps> = ({ books, onEdit }) => {
             </Box>
           </React.Fragment>
         ))}
+
+        {hasMore && (
+          <Box sx={styles.showMoreContainerStyles}>
+            <Button variant="outlined" onClick={showMore} sx={styles.showMoreButtonStyles}>
+              {t('sections.finishedBooks.showMore')}
+            </Button>
+          </Box>
+        )}
       </Container>
     </Box>
   );

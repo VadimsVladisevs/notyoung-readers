@@ -101,3 +101,50 @@ export const swiperStyles: React.CSSProperties = {
   minWidth: 0,
   padding: '8px 4px 16px',
 };
+
+export const filterBarStyles: SxProps<Theme> = {
+  display: 'flex',
+  flexDirection: { xs: 'column', md: 'row' },
+  alignItems: 'center',
+  justifyContent: 'center',
+  gap: 2,
+  mb: 2,
+};
+
+export const searchFieldStyles: SxProps<Theme> = {
+  width: '100%',
+  maxWidth: 420,
+};
+
+export const chipsStyles: SxProps<Theme> = {
+  display: 'flex',
+  flexWrap: 'wrap',
+  justifyContent: 'center',
+  gap: 1,
+};
+
+export const notFoundStyles: SxProps<Theme> = {
+  textAlign: 'center',
+  py: 6,
+};
+
+const statusChipBaseStyles = {
+  position: 'absolute',
+  left: 6,
+  bottom: 6,
+  maxWidth: 'calc(100% - 12px)',
+  fontWeight: 700,
+  boxShadow: 1,
+} as const;
+
+export const progressChipStyles: SxProps<Theme> = {
+  ...statusChipBaseStyles,
+  bgcolor: 'secondary.main',
+  color: 'primary.main',
+};
+
+export const finishedChipStyles: SxProps<Theme> = {
+  ...statusChipBaseStyles,
+  bgcolor: 'rgba(33, 37, 41, 0.85)',
+  color: 'white',
+};

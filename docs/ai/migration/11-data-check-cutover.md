@@ -59,6 +59,7 @@ Replace the legacy Node service on Render with the new Docker image. It runs aga
   - login and logout from the account menu; logged out, book selection is hidden and writes get 401
   - the edit-mode switch shows and hides the pencils and «Добавить книгу»
   - a phone (or a narrow window): swipe the library, no sideways scroll, big dialogs full-screen
+  - library search and status chips, «Показать ещё», «Читать дальше», «Наверх»; statistics opens (its chunk loads)
   - covers load
   
   Then re-run the step-2 counts on prod: unchanged. Cold start: idle >15 min, then `curl -w '%{time_total}'` on `/actuator/health` and `/`.

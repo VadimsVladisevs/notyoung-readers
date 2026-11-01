@@ -1,18 +1,21 @@
-import React from 'react';
+import React, { lazy, Suspense } from 'react';
 import { Box, Divider, CircularProgress, Backdrop } from '@mui/material';
 import MenuAppBar from '../menu-app-bar';
 import LibrarySwiper from '../library-swiper';
 import CurrentBook from '../current-book';
 import FinishedBooks from '../finished-books';
 import BookSelectionDialog from '../book-selection-dialog';
-import StatisticsDialog from '../statistics-dialog';
 import ApprovalDialog from '../approval-dialog';
 import LoginDialog from '../login-dialog';
 import AddBookDialog from '../add-book-dialog';
 import EditBookDialog from '../edit-book-dialog';
 import Footer from '../footer';
+import BackToTop from '../back-to-top';
 import { useHomePage } from './home-page.hooks';
 import * as styles from './home-page.styles';
+
+// Chart.js is big and only the statistics dialog needs it: load it on the first open.
+const StatisticsDialog = lazy(() => import('../statistics-dialog'));
 
 const HomePage: React.FC = () => {
   const {
@@ -28,6 +31,7 @@ const HomePage: React.FC = () => {
     handleToggleEditMode,
     selectionDialogOpen,
     statisticsDialogOpen,
+    statisticsDialogMounted,
     approvalDialogOpen,
     pendingNewBook,
     handleOpenSelectionDialog,
@@ -91,6 +95,8 @@ const HomePage: React.FC = () => {
 
       <Footer />
 
+      <BackToTop />
+
       <BookSelectionDialog
         open={selectionDialogOpen}
         onClose={handleCloseSelectionDialog}
@@ -99,11 +105,15 @@ const HomePage: React.FC = () => {
         onGetRandomBook={handleGetRandomBook}
       />
 
-      <StatisticsDialog
-        open={statisticsDialogOpen}
-        onClose={handleCloseStatistics}
-        books={allBooks}
-      />
+      {statisticsDialogMounted && (
+        <Suspense fallback={null}>
+          <StatisticsDialog
+            open={statisticsDialogOpen}
+            onClose={handleCloseStatistics}
+            books={allBooks}
+          />
+        </Suspense>
+      )}
 
       <ApprovalDialog
         open={approvalDialogOpen}
