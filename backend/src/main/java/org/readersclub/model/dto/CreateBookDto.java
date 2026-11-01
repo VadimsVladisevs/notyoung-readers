@@ -1,26 +1,26 @@
 package org.readersclub.model.dto;
 
-import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Pattern;
 import lombok.Builder;
 
 @Builder
 public record CreateBookDto(
 
-        @NotNull
+        @NotBlank
         String title,
 
-        @NotNull
+        @NotBlank
         String author,
 
-        @NotNull
+        // Optional until cover upload (Phase 10); a book without one shows a placeholder
         @Pattern(regexp = "images\\/(.+?)\\/?(?:.jpg)", message = "Incorrect image path. Pattern: images/*.jpg")
         String image,
 
-        @NotNull
+        @NotBlank
         String tag,
 
-        @NotNull
+        @NotBlank
         String wiki
 ) {
 }

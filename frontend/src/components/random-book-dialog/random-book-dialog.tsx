@@ -13,6 +13,7 @@ import CloseIcon from '@mui/icons-material/Close';
 import { Book } from '../../types';
 import { t } from '../../i18n';
 import * as styles from './random-book-dialog.styles';
+import { coverSrc } from '../../utils/cover';
 
 export interface RandomBookDialogProps {
   open: boolean;
@@ -44,7 +45,7 @@ const RandomBookDialog: React.FC<RandomBookDialogProps> = ({
           <Box sx={styles.imageContainerStyles}>
             <Box
               component="img"
-              src={book.image}
+              src={coverSrc(book)}
               alt={book.title}
               sx={styles.imageStyles}
             />

@@ -8,6 +8,7 @@ import BookSelectionDialog from '../book-selection-dialog';
 import StatisticsDialog from '../statistics-dialog';
 import ApprovalDialog from '../approval-dialog';
 import LoginDialog from '../login-dialog';
+import AddBookDialog from '../add-book-dialog';
 import Footer from '../footer';
 import { useHomePage } from './home-page.hooks';
 import * as styles from './home-page.styles';
@@ -36,6 +37,11 @@ const HomePage: React.FC = () => {
     loginDialogOpen,
     handleOpenLoginDialog,
     handleCloseLoginDialog,
+    addBookDialogOpen,
+    handleOpenAddBookDialog,
+    handleCloseAddBookDialog,
+    handleAddBook,
+    tags,
     handleLogout,
   } = useHomePage();
 
@@ -49,6 +55,7 @@ const HomePage: React.FC = () => {
       </Backdrop>
       <MenuAppBar 
         onOpenBookSelection={canSelectBook ? handleOpenSelectionDialog : undefined}
+        onOpenAddBook={canSelectBook ? handleOpenAddBookDialog : undefined}
         onOpenStatistics={handleOpenStatistics}
         loggedIn={loggedIn}
         onLogin={handleOpenLoginDialog}
@@ -97,6 +104,13 @@ const HomePage: React.FC = () => {
       <LoginDialog
         open={loginDialogOpen}
         onClose={handleCloseLoginDialog}
+      />
+
+      <AddBookDialog
+        open={addBookDialogOpen}
+        onClose={handleCloseAddBookDialog}
+        onSubmit={handleAddBook}
+        tags={tags}
       />
     </Box>
   );

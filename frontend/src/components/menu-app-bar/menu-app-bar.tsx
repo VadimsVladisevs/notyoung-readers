@@ -26,6 +26,8 @@ import * as styles from './menu-app-bar.styles';
 export interface MenuAppBarProps {
   /** Omitted when the user may not select a book: the menu item is hidden. */
   onOpenBookSelection?: () => void;
+  /** Omitted when the user may not add books: the menu item is hidden. */
+  onOpenAddBook?: () => void;
   onOpenStatistics: () => void;
   loggedIn: boolean;
   onLogin: () => void;
@@ -34,6 +36,7 @@ export interface MenuAppBarProps {
 
 const MenuAppBar: React.FC<MenuAppBarProps> = ({
   onOpenBookSelection,
+  onOpenAddBook,
   onOpenStatistics,
   loggedIn,
   onLogin,
@@ -68,6 +71,13 @@ const MenuAppBar: React.FC<MenuAppBarProps> = ({
           <ListItem disablePadding>
             <ListItemButton sx={styles.listItemButtonStyles} onClick={onOpenBookSelection}>
               <ListItemText primary={t('nav.bookSelection')} />
+            </ListItemButton>
+          </ListItem>
+        )}
+        {onOpenAddBook && (
+          <ListItem disablePadding>
+            <ListItemButton sx={styles.listItemButtonStyles} onClick={onOpenAddBook}>
+              <ListItemText primary={t('nav.addBook')} />
             </ListItemButton>
           </ListItem>
         )}
@@ -141,6 +151,11 @@ const MenuAppBar: React.FC<MenuAppBarProps> = ({
                   sx={styles.bookSelectionButtonStyles}
                 >
                   {t('nav.bookSelection')}
+                </Button>
+              )}
+              {onOpenAddBook && (
+                <Button onClick={onOpenAddBook} sx={styles.navButtonStyles}>
+                  {t('nav.addBook')}
                 </Button>
               )}
               <Button

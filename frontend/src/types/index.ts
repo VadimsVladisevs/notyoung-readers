@@ -6,7 +6,8 @@ export interface Book {
   updatedAt: string;
   title: string;
   author: string;
-  image: string;
+  /** Missing on books added without a cover (until Phase 10 upload). */
+  image?: string;
   status: BookStatus;
   tag: string;
   wiki: string;
@@ -20,7 +21,7 @@ export interface Statistics {
 export interface CreateBookDto {
   title: string;
   author: string;
-  image: string;
+  image?: string;
   tag: string;
   wiki: string;
 }

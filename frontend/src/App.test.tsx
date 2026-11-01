@@ -295,4 +295,104 @@ describe('App', () => {
       expect(await within(approval).findByText('Не удалось сохранить. Попробуйте ещё раз.')).toBeInTheDocument();
     });
   });
+
+  describe('add book', () => {
+    const NEW_BOOK = { title: 'Вий', author: 'Гоголь', tag: 'вера', wiki: 'Повесть' };
+
+    /** Mocks the add endpoint: records the body and returns the books with the new one from then on. */
+    const mockAdd = () => {
+      const bodies: unknown[] = [];
+      let books = allBooks;
+      server.use(
+        http.get('/api/books', () => HttpResponse.json(books)),
+        http.post('/api/books/add', async ({ request }) => {
+          const body = (await request.json()) as typeof NEW_BOOK;
+          bodies.push({ body, csrf: request.headers.get(CSRF_HEADER) });
+          const added = { ...current, ...body, id: 'a1', status: 'new' as const, image: undefined };
+          books = [...allBooks, added];
+          return HttpResponse.json(added, { status: 201 });
+        }),
+      );
+      return bodies;
+    };
+
+    const openAddDialog = async (user: ReturnType<typeof userEvent.setup>) => {
+      await user.click(screen.getAllByRole('button', { name: 'Добавить книгу' })[0]);
+      return screen.findByRole('dialog', { name: /Новая книга/ });
+    };
+
+    const fill = async (user: ReturnType<typeof userEvent.setup>, dialog: HTMLElement, book: Partial<typeof NEW_BOOK>) => {
+      if (book.title) await user.type(within(dialog).getByLabelText('Название'), book.title);
+      if (book.author) await user.type(within(dialog).getByLabelText('Автор'), book.author);
+      if (book.tag) await user.type(within(dialog).getByLabelText('Участник'), book.tag);
+      if (book.wiki) await user.type(within(dialog).getByLabelText('Описание'), book.wiki);
+    };
+
+    it('is hidden while logged out', async () => {
+      await renderApp({ loggedIn: false });
+
+      expect(screen.queryByRole('button', { name: 'Добавить книгу' })).not.toBeInTheDocument();
+    });
+
+    it('adds a book without a cover, which then shows the placeholder', async () => {
+      const bodies = mockAdd();
+      const user = await renderApp();
+      const dialog = await openAddDialog(user);
+
+      await fill(user, dialog, { ...NEW_BOOK, title: '  Вий ' });
+      await user.click(within(dialog).getByRole('button', { name: 'Добавить' }));
+
+      await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
+      expect(bodies).toEqual([{ body: NEW_BOOK, csrf: 'tok' }]);
+      const covers = await screen.findAllByRole('img', { name: 'Вий' });
+      expect(covers[0]).toHaveAttribute('src', 'cover-placeholder.svg');
+    });
+
+    it('suggests existing tags', async () => {
+      const user = await renderApp();
+      const dialog = await openAddDialog(user);
+
+      await user.type(within(dialog).getByLabelText('Участник'), 'бо');
+
+      expect(await screen.findByRole('option', { name: 'борис' })).toBeInTheDocument();
+      expect(screen.queryByRole('option', { name: 'анна' })).not.toBeInTheDocument();
+    });
+
+    it('asks for every field before calling the backend', async () => {
+      const bodies = mockAdd();
+      const user = await renderApp();
+      const dialog = await openAddDialog(user);
+
+      await fill(user, dialog, { title: 'Вий', author: 'Гоголь', tag: 'вера', wiki: '   ' });
+      await user.click(within(dialog).getByRole('button', { name: 'Добавить' }));
+
+      expect(within(dialog).getByText('Заполните все поля')).toBeInTheDocument();
+      expect(within(dialog).getByLabelText('Описание')).toHaveAttribute('aria-invalid', 'true');
+      expect(within(dialog).getByLabelText('Название')).toHaveAttribute('aria-invalid', 'false');
+      expect(bodies).toEqual([]);
+    });
+
+    it('says the session expired on 401 and hides the menu item', async () => {
+      server.use(http.post('/api/books/add', () => HttpResponse.json({ status: 401 }, { status: 401 })));
+      const user = await renderApp();
+      const dialog = await openAddDialog(user);
+
+      await fill(user, dialog, NEW_BOOK);
+      await user.click(within(dialog).getByRole('button', { name: 'Добавить' }));
+
+      expect(await within(dialog).findByText('Сессия истекла. Войдите снова.')).toBeInTheDocument();
+      expect(screen.queryByRole('button', { name: 'Добавить книгу', hidden: true })).not.toBeInTheDocument();
+    });
+
+    it('shows a generic error when saving fails', async () => {
+      server.use(http.post('/api/books/add', () => HttpResponse.json({ status: 400 }, { status: 400 })));
+      const user = await renderApp();
+      const dialog = await openAddDialog(user);
+
+      await fill(user, dialog, NEW_BOOK);
+      await user.click(within(dialog).getByRole('button', { name: 'Добавить' }));
+
+      expect(await within(dialog).findByText('Не удалось сохранить. Попробуйте ещё раз.')).toBeInTheDocument();
+    });
+  });
 });

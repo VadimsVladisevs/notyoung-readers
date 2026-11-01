@@ -10,6 +10,7 @@ import * as styles from './library-swiper.styles';
 
 import 'swiper/css';
 import 'swiper/css/navigation';
+import { coverSrc } from '../../utils/cover';
 
 export interface LibrarySwiperProps {
   books: Book[];
@@ -71,7 +72,7 @@ const LibrarySwiper: React.FC<LibrarySwiperProps> = ({ books }) => {
                   <Box sx={styles.imageContainerStyles}>
                     <Box
                       component="img"
-                      src={book.image}
+                      src={coverSrc(book)}
                       alt={book.title}
                       sx={styles.imageStyles}
                     />

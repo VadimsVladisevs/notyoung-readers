@@ -4,6 +4,7 @@ import { Book } from '../../types';
 import { t } from '../../i18n';
 import { CURRENT_BOOK_CONSTANTS } from './current-book.constants';
 import * as styles from './current-book.styles';
+import { coverSrc } from '../../utils/cover';
 
 export interface CurrentBookProps {
   book: Book | null;
@@ -32,7 +33,7 @@ const CurrentBook: React.FC<CurrentBookProps> = ({ book, onSelectClick }) => {
             <Box sx={styles.imageContainerStyles}>
               <Box
                 component="img"
-                src={book.image}
+                src={coverSrc(book)}
                 alt={book.title}
                 sx={styles.imageStyles}
               />

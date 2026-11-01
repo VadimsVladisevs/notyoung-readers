@@ -51,11 +51,11 @@ public class BookService {
 
     public Book createAndSave(CreateBookDto bookDto) {
         return bookRepository.save(Book.builder()
-                .title(bookDto.title())
-                .author(bookDto.author())
-                .tag(bookDto.tag())
+                .title(bookDto.title().strip())
+                .author(bookDto.author().strip())
+                .tag(bookDto.tag().strip())
                 .status(BookStatus.NEW)
-                .wiki(bookDto.wiki())
+                .wiki(bookDto.wiki().strip())
                 .image(bookDto.image())
                 .build());
     }

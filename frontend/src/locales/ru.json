@@ -7,6 +7,7 @@
     "currentBook": "Выбранная книга",
     "finishedBooks": "Прочитанные книжки",
     "bookSelection": "Выбор книги",
+    "addBook": "Добавить книгу",
     "statistics": "Статистика",
     "login": "Войти",
     "logout": "Выйти"
@@ -57,6 +58,18 @@
       "sessionExpired": "Сессия истекла. Войдите снова.",
       "cancelButton": "Отмена",
       "confirmButton": "Подтвердить"
+    },
+    "addBook": {
+      "title": "Новая книга",
+      "titleLabel": "Название",
+      "authorLabel": "Автор",
+      "tagLabel": "Участник",
+      "wikiLabel": "Описание",
+      "required": "Заполните все поля",
+      "saveFailed": "Не удалось сохранить. Попробуйте ещё раз.",
+      "sessionExpired": "Сессия истекла. Войдите снова.",
+      "cancelButton": "Отмена",
+      "submitButton": "Добавить"
     },
     "login": {
       "title": "Вход",

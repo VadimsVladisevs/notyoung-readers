@@ -1,7 +1,7 @@
 import { useState, useCallback } from 'react';
 import { useBooksContext } from '../../context/books-context';
 import { useAuthContext } from '../../context/auth-context';
-import { Book } from '../../types';
+import { Book, CreateBookDto } from '../../types';
 import * as api from '../../services/api';
 
 export const useHomePage = () => {
@@ -20,6 +20,7 @@ export const useHomePage = () => {
   const [approvalDialogOpen, setApprovalDialogOpen] = useState(false);
   const [pendingNewBook, setPendingNewBook] = useState<Book | null>(null);
   const [loginDialogOpen, setLoginDialogOpen] = useState(false);
+  const [addBookDialogOpen, setAddBookDialogOpen] = useState(false);
 
   const handleOpenSelectionDialog = useCallback(() => {
     setSelectionDialogOpen(true);
@@ -82,8 +83,33 @@ export const useHomePage = () => {
     setLoginDialogOpen(false);
   }, []);
 
+  const handleOpenAddBookDialog = useCallback(() => {
+    setAddBookDialogOpen(true);
+  }, []);
+
+  const handleCloseAddBookDialog = useCallback(() => {
+    setAddBookDialogOpen(false);
+  }, []);
+
+  const handleAddBook = useCallback(async (book: CreateBookDto) => {
+    try {
+      await api.addBook(book);
+    } catch (err) {
+      if (err instanceof api.ApiError && err.status === 401) {
+        sessionExpired();
+      }
+      throw err;
+    }
+    await refreshBooks();
+    setAddBookDialogOpen(false);
+  }, [refreshBooks, sessionExpired]);
+
+  // Distinct tags (club members) for the add-book suggestions.
+  const tags = [...new Set(allBooks.map((book) => book.tag).filter(Boolean))].sort((a, b) => a.localeCompare(b));
+
   const handleLogout = useCallback(async () => {
     setSelectionDialogOpen(false);
+    setAddBookDialogOpen(false);
     await logout();
   }, [logout]);
 
@@ -110,6 +136,11 @@ export const useHomePage = () => {
     loginDialogOpen,
     handleOpenLoginDialog,
     handleCloseLoginDialog,
+    addBookDialogOpen,
+    handleOpenAddBookDialog,
+    handleCloseAddBookDialog,
+    handleAddBook,
+    tags,
     handleLogout,
   };
 };

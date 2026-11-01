@@ -4,6 +4,7 @@ import { Book } from '../../types';
 import { t } from '../../i18n';
 import { FINISHED_BOOKS_CONSTANTS } from './finished-books.constants';
 import * as styles from './finished-books.styles';
+import { coverSrc } from '../../utils/cover';
 
 export interface FinishedBooksProps {
   books: Book[];
@@ -35,7 +36,7 @@ const FinishedBooks: React.FC<FinishedBooksProps> = ({ books }) => {
               <Box sx={styles.imageColumnStyles}>
                 <Box
                   component="img"
-                  src={book.image}
+                  src={coverSrc(book)}
                   alt={book.title}
                   sx={styles.featuretteImageStyles}
                 />

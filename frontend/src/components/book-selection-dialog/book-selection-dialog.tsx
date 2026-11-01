@@ -22,6 +22,7 @@ import RandomBookDialog from '../random-book-dialog';
 import { useBookSelectionDialog } from './book-selection-dialog.hooks';
 import { SEARCH_FILTER_OPTIONS, SearchFilterOption } from './book-selection-dialog.constants';
 import * as styles from './book-selection-dialog.styles';
+import { coverSrc } from '../../utils/cover';
 
 export interface BookSelectionDialogProps {
   open: boolean;
@@ -157,7 +158,7 @@ const BookSelectionDialog: React.FC<BookSelectionDialogProps> = ({
                   <Box sx={styles.cardImageContainerStyles}>
                     <Box
                       component="img"
-                      src={book.image}
+                      src={coverSrc(book)}
                       alt={book.title}
                       sx={styles.cardImageStyles}
                     />

@@ -114,14 +114,45 @@ class BookControllerTests extends IntegrationTest {
             assertEquals(1, bookRepository.count());
         }
 
+        @Test
+        void createsBookWithoutImage() throws Exception {
+            mockMvc.perform(post("/api/books/add").with(admin()).contentType(MediaType.APPLICATION_JSON).content("""
+                            {"title": "Title", "author": "Author", "tag": "tag", "wiki": "w"}"""))
+                    .andExpect(status().isCreated())
+                    .andExpect(jsonPath("$.image").doesNotExist());
+
+            assertEquals(null, bookRepository.findAll().getFirst().getImage());
+        }
+
+        @Test
+        void trimsFields() throws Exception {
+            mockMvc.perform(post("/api/books/add").with(admin()).contentType(MediaType.APPLICATION_JSON).content("""
+                            {"title": " Title ", "author": " Author ", "tag": " tag ", "wiki": " w "}"""))
+                    .andExpect(status().isCreated());
+
+            Book saved = bookRepository.findAll().getFirst();
+            assertEquals("Title", saved.getTitle());
+            assertEquals("Author", saved.getAuthor());
+            assertEquals("tag", saved.getTag());
+            assertEquals("w", saved.getWiki());
+        }
+
         static Stream<Arguments> invalidBodies() {
             return Stream.of(
                     Arguments.of("title", """
                             {"author": "Author", "image": "images/cover.jpg", "tag": "tag", "wiki": "w"}"""),
+                    Arguments.of("title", """
+                            {"title": "  ", "author": "Author", "tag": "tag", "wiki": "w"}"""),
                     Arguments.of("author", """
                             {"title": "Title", "image": "images/cover.jpg", "tag": "tag", "wiki": "w"}"""),
+                    Arguments.of("author", """
+                            {"title": "Title", "author": "", "tag": "tag", "wiki": "w"}"""),
+                    Arguments.of("tag", """
+                            {"title": "Title", "author": "Author", "tag": " ", "wiki": "w"}"""),
+                    Arguments.of("wiki", """
+                            {"title": "Title", "author": "Author", "tag": "tag", "wiki": "  "}"""),
                     Arguments.of("image", """
-                            {"title": "Title", "author": "Author", "tag": "tag", "wiki": "w"}"""),
+                            {"title": "Title", "author": "Author", "image": "", "tag": "tag", "wiki": "w"}"""),
                     Arguments.of("image", """
                             {"title": "Title", "author": "Author", "image": "cover.png", "tag": "tag", "wiki": "w"}"""),
                     Arguments.of("tag", """

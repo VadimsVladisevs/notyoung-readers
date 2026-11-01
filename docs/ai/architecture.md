@@ -18,9 +18,9 @@ MongoDB database `readersDB`, collection **`books`**, shared with the legacy app
 |---|---|---|
 | `_id` | ObjectId | `Book.id` (String) |
 | `title`, `author`, `tag` | string | Legacy Mongoose declares a unique index on `title`, but **prod has none** (only `_id`, checked Phase 6); the new app creates no indexes |
-| `image` | string | `images/<file>.jpg` (validated on create/update) |
+| `image` | string | `images/<file>.jpg` (validated when sent). **Missing on books added without a cover** (Phase 8; upload comes in Phase 10); the UI shows a placeholder |
 | `status` | string | Lowercase `new` / `progress` / `finished`. Mapped to `BookStatus` by `BookWritingConverter` / `BookStatusReadingConverter` |
-| `wiki` | string | Link; **missing in some legacy docs** |
+| `wiki` | string | The book's description text shown under the title (not a link). Required on new books; **missing in some legacy docs** |
 | `rating` | number | 1–10 when finished; legacy may store ints → read as `Double` |
 | `createdAt`, `updatedAt` | date | Spring Data auditing; **missing in some old docs** |
 | `__v` | int | Legacy Mongoose version key; ignored |
@@ -51,7 +51,7 @@ The session cookie is `HttpOnly`, `Secure`, `SameSite=Lax`, and the login change
 |---|---|---|---|
 | `GET /api/books` | `?status=new\|progress\|finished` optional | 200 list | 400 unknown status |
 | `GET /api/books/{id}` | | 200 book | 404 |
-| `POST /api/books/add` | JSON `CreateBookDto`: title, author, image, tag, wiki, all required | 201 book, status `new` | 400 + `errors` |
+| `POST /api/books/add` | JSON `CreateBookDto`: title, author, tag, wiki required and not blank (stored trimmed); `image` optional | 201 book, status `new` (no `image` field when none was sent) | 400 + `errors` |
 | `PATCH /api/books/{id}/update` | JSON `BookDto`, any subset of fields; omitted fields keep their value | 200 book | 400, 404 |
 | `PATCH /api/books/{id}/start` | | 200 book in `progress` | 409 unless `new`; 404 |
 | `PATCH /api/books/{id}/finish` | JSON `{"rating": 1..10}`, number or numeric string | 200 book in `finished` | 400 + `errors.rating`; 409 unless `progress`; 404 |
@@ -64,6 +64,6 @@ The session cookie is `HttpOnly`, `Secure`, `SameSite=Lax`, and the login change
 
 All non-`GET` book rows also return 401/403 as described in Auth above. The UI calls `me` on page load and sends the CSRF header on every write (see [frontend.md](frontend.md)).
 
-`POST /api/books/add` rejects a missing `wiki` (400), although some legacy books have none (found in Phase 4). Send `""` when copying such books.
+`POST /api/books/add` rejects a missing or blank `wiki` (400), although some legacy books have none (decided in Phase 8: required for new books, legacy ones stay as they are).
 
 The legacy app's endpoints (`/books`, `/finish`, `/start`, `/addbook`, ...) are in [legacy-analysis.md](legacy-analysis.md); the new API is not a drop-in replacement for them.
