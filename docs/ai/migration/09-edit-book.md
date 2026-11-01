@@ -1,6 +1,6 @@
 # Phase 9: Edit and delete a book
 
-Part of [PLAN.md](PLAN.md). Status: ◐ (started 2026-11-01)
+Part of [PLAN.md](PLAN.md). Status: ☑ (done 2026-11-01)
 
 ## Goal
 The logged-in admin (role ADMIN) edits and deletes a book from the UI. `PATCH /api/books/{id}/update` and `DELETE /api/books/{id}` already exist and Phase 7 limits them to ADMIN. But no UI calls them, and update has no blank check, no trim and no status rules.
@@ -35,4 +35,4 @@ Done when a logged-in admin edits and deletes a book from the UI, and every othe
 - [x] Local (2026-11-01, `dev` + compose Mongo, temporary users `e2e-admin` / `e2e-reader` and book `E2E Phase 9`, all deleted afterwards):
   - curl via the Vite proxy: anonymous PATCH/DELETE → 401; non-ADMIN → 403; blank title → 400; finished without a rating → 400; second `progress` → 409; edit (trimmed), new → finished (8) → new (rating cleared) → 200
   - browser logged out: no pencils; as admin: pencils on the swiper, the current book and the finished list; the dialog opens filled; «Прочитана» + «8,5» moves the book to the finished list with 8.5; delete → confirmation → gone, list renumbered; no console errors
-- [ ] Staging (user): edit and delete work as admin.
+- [x] Staging (user, `a0553ab`): logged in as admin, changing the rating and deleting a book work.
