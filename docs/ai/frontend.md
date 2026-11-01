@@ -39,7 +39,7 @@ Page order: current book (the page's only `h1`) → library swiper → finished 
 - **Anchors:** all three sections have `scrollMarginTop: 48px`, so a nav click lands the heading below the fixed navbar (up to 93px tall on desktop). Keep it if the navbar or section spacing changes.
 
 ## Dev setup
-- `vite.config.ts` proxies `/api` and `/images` (covers from GridFS) → `http://localhost:8080`. Covers in dev need the backend running and the covers imported into the local Mongo (`scripts/import-covers.sh`, see [architecture.md](architecture.md)). `vite build` doesn't include covers.
+- `vite.config.ts` proxies `/api` and `/images` (covers from GridFS) → `http://localhost:8080`. Covers in dev need the backend running and covers in the local Mongo's GridFS (the compose data has them; a fresh volume gets them from a dump, see [architecture.md](architecture.md)). `vite build` doesn't include covers.
 - `index.html` lives in `frontend/` (Vite entry); `public/` holds `manifest.json`, `robots.txt` and `cover-placeholder.svg`.
 
 ## Tests

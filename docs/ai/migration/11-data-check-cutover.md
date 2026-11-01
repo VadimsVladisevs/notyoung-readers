@@ -1,6 +1,6 @@
 # Phase 11 — Data check + cutover
 
-Part of [PLAN.md](PLAN.md). Status: ☐ (drafted 2026-11-01 as the old Phase 7; moved to the end so login and book management ship first)
+Part of [PLAN.md](PLAN.md). Status: ◐ (drafted 2026-11-01 as the old Phase 7; moved to the end so login and book management ship first; started 2026-11-01)
 
 ## Revisit at phase start
 Phases 7–10 change parts of this plan. Re-check every step before starting:
@@ -27,8 +27,8 @@ Replace the legacy Node service on Render with the new Docker image. It runs aga
 - Prod `books` has no unique `title` index, only `_id` (Phase 6). Decide whether to add one after the duplicate check.
 
 ## Tasks
-- [ ] **1. Sub-plan review** against "Revisit at phase start"; PLAN.md row → ◐.
-- [ ] **2. Read-only prod data check (user):** `mongosh` in a `mongo:8.0` container against prod `readersDB`:
+- [x] **1. Sub-plan review** against "Revisit at phase start"; PLAN.md row → ◐. Reviewed 2026-11-01: branch clean and pushed at `470bd6d`, `origin/main` (`36ce2fe`) merged in, 163 covers in `public/images/` (includes the November book). The UI commits `d70b7e2` and `470bd6d` came after the Phase 10 staging check, so step 9 is their first staging check.
+- [x] **2. Read-only prod data check (user):** done 2026-11-01, see Findings. `mongosh` in a `mongo:8.0` container against prod `readersDB`:
   - `books` count per status, and any status outside `new/progress/finished`
   - type/range of `rating` on finished books
   - books missing title/author/tag/createdAt
@@ -36,17 +36,17 @@ Replace the legacy Node service on Render with the new Docker image. It runs aga
   - all `image` values, diffed locally against the covers to find missing or orphaned files
   
   The counts are the baseline for "prod unchanged".
-- [ ] **3. Isolation check (user):** as `readers-staging`, `use readersDB; db.books.countDocuments()` → `Unauthorized`.
-- [ ] **4. Covers into prod (user), before the switch:** `MONGO_URI='<prod URI, no db path>' scripts/import-covers.sh readersDB`. Expect 163 files (more if covers were added through the legacy app since) and "Books whose cover is missing: 0"; a missing one means a legacy file not in `public/images/`. The legacy app is unaffected (it never reads GridFS). Re-run right before the switch if legacy added books meanwhile.
-- [ ] **5. Delete legacy files:**
+- [x] **3. Isolation check (user):** first run 2026-11-01 failed (count 159); after the role fix `readWrite@readersDB_staging` only, `find` on `readersDB.books` refused. as `readers-staging`, `use readersDB; db.books.countDocuments()` → `Unauthorized`.
+- [x] **4. Covers into prod (user), before the switch:** done 2026-11-01: 163 files, 0 missing. `MONGO_URI='<prod URI, no db path>' scripts/import-covers.sh readersDB`. Expect 163 files (more if covers were added through the legacy app since) and "Books whose cover is missing: 0"; a missing one means a legacy file not in `public/images/`. The legacy app is unaffected (it never reads GridFS). Re-run right before the switch if legacy added books meanwhile.
+- [x] **5. Delete legacy files:** done 2026-11-01: 9 files + 163 covers `git rm`ed one by one (`git rm` dropped the empty dirs); `scripts/import-covers.sh` deleted too (it is not on `legacy`, which predates it: `git show 470bd6d:scripts/import-covers.sh`).
   - `git rm` one by one: `app.js`, `modules/db.js`, `index.html`, `public/css/styles.css`, `public/js/index.js`, `package.json`, `yarn.lock`, `Procfile`, and the 163 `public/images/*.jpg` after step 4 (they live on in GridFS and on branch `legacy`; `scripts/import-covers.sh` reads them, so delete the script too or point it at the `legacy` branch)
   - `rmdir` the empty dirs
   - keep `.nvmrc`, because the frontend uses it
-- [ ] **6. Docs:**
+- [x] **6. Docs:** done 2026-11-01.
   - README: drop the migration banner; add a prod deploy section (Render Docker service, env vars, health `/actuator/health`, rollback)
   - `AGENTS.md`: drop the legacy line
   - `update-ai-docs`
-- [ ] **7. Local verify:**
+- [x] **7. Local verify:** done 2026-11-01: backend 103 tests green; frontend build green, tests 75/75 (one run had 1 failure while Maven ran in parallel, 4 reruns green: likely a timeout under load); image against compose Mongo: health UP, `/` 200, cover 200 `image/jpeg`, `/api/statistics` 200, logged-out write 401 (403 without the CSRF token), no `.jpg` in the image. Dev-server covers not re-checked (same backend endpoint, Vite proxy unchanged).
   - `./mvnw verify` and `npm run build && npm test`
   - `docker build` + `docker run -p 8090:8080` against compose Mongo
   - the dev server shows covers (through the backend, from the local GridFS)
@@ -86,7 +86,11 @@ Replace the legacy Node service on Render with the new Docker image. It runs aga
   - later: the user deletes the `legacy` branch after a stable week
 
 ## Findings
-*(none yet)*
+- **Prod baseline (step 2, 2026-11-01):** `books` 159 = finished 56 + new 102 + progress 1; no bad status; title/author/tag/wiki/image never missing; `createdAt` missing on 83 (legacy books, no impact: nothing sorts or reads it); indexes `_id_` only; `users` = `admin` without `roles`; GridFS empty.
+- **Ratings:** finished books have 48 double, 6 int and 2 **string** (`"5.7"`, `"7.67"`). Spring's converter reads the strings into `Double`, and staging (a copy of prod) has shown them since Phase 6. A rewrite through the app (edit/finish) stores a double. Statistics counts tags only, so ratings don't affect it. No data fix needed.
+- **Covers:** the 159 books use 159 distinct `image` values, and every one has a file in `public/images/`. The repo has 4 orphans (`club-foto.jpg`, `rushdi-deti.jpg.jpg`, `stejnbek-vostok.jpg`, `ukio-hram.jpg`). The import puts them into GridFS too (harmless, served only by name), so expect 163 files.
+- **Staging isolation (step 3):** `readers-staging` could read prod `readersDB` (count 159). Fix: Atlas Database Access → that user gets only `readWrite@readersDB_staging`, no built-in role. Fixed 2026-11-01 and re-checked: refused.
+- **Duplicate titles:** «Старик и море» ×2 and «Бабушка велела кланяться и передать, что просит прощения» ×2, each pair with different covers (`ernest-more`/`ernest-starik-i-more`, `bakman-babushka`/`bakman-babuska`), so they look like accidental double entries. A unique `title` index would fail on them, so none is added. The admin can delete the extra copy in the new UI after cutover if the club wants.
 
 ## Verify
 - [ ] Local: backend and frontend tests green; the image serves `/`, covers, API and health.

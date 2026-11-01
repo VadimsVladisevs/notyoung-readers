@@ -30,7 +30,6 @@ Done when you have a list of changed paths with what changed in each, from readi
 | `backend/src/test/**` | `backend.md` (Tests) |
 | `backend/pom.xml`, `.mvn/` | `backend.md` (only if the stack, test setup or a gotcha changed), `workflow.md` (commands) |
 | `frontend/**` | `frontend.md`; `architecture.md` if API usage changed |
-| root legacy files (`app.js`, `modules/`, `index.html`, `public/`) | `architecture.md` (pieces) |
 | `Dockerfile`, `compose.yaml`, `render.yaml`, CI, env vars | `workflow.md`, `architecture.md` (pieces), `backend.md` (config) |
 | a new top-level area, or an always-relevant gotcha | `AGENTS.md`, `docs/ai/README.md` |
 | a migration-plan task done or a decision made | `migration/PLAN.md` + the phase's `0N-*.md` (see step 4) |

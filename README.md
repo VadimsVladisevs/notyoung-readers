@@ -2,7 +2,7 @@
 
 Website of the book club «НЕЮНЫЙ ЧИТАТЕЛЬ»: the books the club plans to read, is reading and has finished, plus statistics per tag.
 
-> **Migration in progress.** Production still runs the legacy Node.js app at the repo root (`app.js`). The new app lives in `backend/` (Spring Boot) and `frontend/` (React + Vite). This README covers the new app.
+The app is `backend/` (Spring Boot) and `frontend/` (React + Vite), shipped as one Docker image.
 
 ## Prerequisites
 - **JDK 25**, an OpenJDK build such as [Eclipse Temurin](https://adoptium.net/). `JAVA_HOME` must point to it.
@@ -38,10 +38,7 @@ cd frontend
 npm ci
 npm run dev
 ```
-Open `http://localhost:5173`. `/api` and `/images` are proxied to the backend on `:8080`. Covers are stored in MongoDB (GridFS). Load them into the local database once (Git Bash, Docker running; safe to re-run):
-```bash
-MONGO_URI='mongodb://host.docker.internal:27017' scripts/import-covers.sh
-```
+Open `http://localhost:5173`. `/api` and `/images` are proxied to the backend on `:8080`. Covers are stored in MongoDB (GridFS: `fs.files`, `fs.chunks`), so they come with a database dump; a book without a cover file shows a placeholder. The original cover files are on the `legacy` branch; their import script `scripts/import-covers.sh` is in git history (`git show 470bd6d:scripts/import-covers.sh`).
 
 ## Tests
 ```bash
@@ -51,6 +48,12 @@ cd frontend && npm test && npm run build
 
 ## Configuration (production)
 The base config has no defaults. Production sets these env vars: `DB_URL` (MongoDB URI) and `PORT` (default 8080). The login account is the `admin` document in the database's `users` collection, which needs `roles: ["ADMIN"]`. `DB_NAME` picks the database (default `readersDB`).
+
+## Production deploy
+- **Render** web service, runtime **Docker**, `./Dockerfile`, branch `main`, health check `/actuator/health`. Every push to `main` deploys. Plan Free: the JVM flags in the Dockerfile fit 512 MB, and the first request after 15 minutes idle is slow (cold start).
+- **Env vars**, set in the Render dashboard and never in the repo: `DB_URL` (Atlas URI of prod `readersDB`).
+- **Data:** MongoDB Atlas, database `readersDB`: `books`, `users`, and the covers in GridFS.
+- **Rollback:** the branch `legacy` holds the old Node.js app. In Render, set runtime Node, build `yarn install`, start `node app.js`, branch `legacy`. It reads the same `books` data and ignores GridFS and `roles`, but it serves covers only from its own files, so covers added in the new app don't show there. The Atlas password was rotated at cutover, so `DB_URL` stays the current one.
 
 ## Docker image and staging
 ```bash

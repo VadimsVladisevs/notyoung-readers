@@ -3,12 +3,12 @@
 ## The pieces
 | Part | Where | Status |
 |---|---|---|
-| Legacy app | repo root: `app.js`, `modules/db.js`, `index.html`, `public/` (jQuery + 163 covers in `public/images/`) | **Production** on Render (Heroku-style `Procfile`), MongoDB Atlas. Frozen until cutover (Phase 11) |
+| Legacy app | branch `legacy` only (removed from this branch in Phase 11): Express `app.js`, jQuery `index.html`, the 163 cover files in `public/images/` | **Production** on Render until the Phase 11 switch, then the rollback target (README → Production deploy) |
 | Backend | `backend/` | Spring Boot REST API under `/api`. On staging inside the app image (below) |
 | Frontend | `frontend/` | React SPA; calls relative `/api/...` URLs (dev proxy → `:8080`). On staging inside the app image (below) |
 | App image | `Dockerfile`, `.dockerignore` (allow-list), `render.yaml` (repo root) | Node stage builds `frontend/dist` → Maven stage puts it in `static/` and packages the jar → `eclipse-temurin:25-jre`, non-root, JVM flags for 512 MB. **No cover files in the image** (Phase 10). Spring serves `/` (`index.html`), `/assets/**`, `/images/**` (covers from GridFS, `CoverController`), `/api/**`, `/actuator/health`. No SPA fallback (no client router). `render.yaml` defines only the **staging** service (`readers-club-staging`, Free, branch `migration/spring-react`, DB `readersDB_staging` with its own Atlas user), live at `https://readers-club-staging.onrender.com` |
 | Local MongoDB | `compose.yaml` (repo root) | Dev only: `mongo:8.0` on `127.0.0.1:27017`, no auth, volume `readersclub_mongo-data`. Run steps in the root `README.md` |
-| Cover import | `scripts/import-covers.sh` (Git Bash) | Loads repo-root `public/images/*.jpg` into GridFS with `mongofiles` from the `mongo:8.0` image (`--replace`, safe to re-run), then reports books whose cover file is missing. `MONGO_URI` from the env (no database path), database as the first argument (default `readersDB`). Run once per database: local done 2026-11-01; staging and prod by the user |
+| Covers | GridFS in each database | Imported once from the legacy files with `scripts/import-covers.sh` (removed in Phase 11; `git show 470bd6d:scripts/import-covers.sh`): local, staging and prod (2026-11-01, 163 files each). New covers come only through the upload in the add/edit dialogs |
 
 Target: the app image on Render against the **same Atlas data** (staging in Phase 6 on a copy, `readersDB_staging`; prod at cutover, Phase 11). Atlas runs MongoDB 8.0.36, the same major version as the `mongo:8.0` used by Testcontainers and compose. Covers live in **GridFS** (Phase 10); the book's `image` field holds the relative path `images/<file>`, which is also the cover's URL. The legacy app reads the same field and serves its own files, so it keeps working on the same data.
 

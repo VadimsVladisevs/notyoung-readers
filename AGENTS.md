@@ -4,7 +4,7 @@ Website of a book club ("НЕЮНЫЙ ЧИТАТЕЛЬ"): the books the club pla
 
 ## Where things are
 - **Branch `migration/spring-react`:** the Node.js → Spring Boot + React migration is in progress. The plan and its current phase are in `docs/ai/migration/PLAN.md`.
-- **Repo root** (`app.js`, `modules/`, `index.html`, `public/`): the **legacy** Express app that runs in production. It is frozen until cutover; change it only when asked.
+- **Branch `legacy`:** the old Express app, kept only as the prod rollback. Don't change it.
 - **`backend/`**: Spring Boot 4 + Java 25 + MongoDB. **`frontend/`**: React + TypeScript + MUI.
 
 ## Read before working
