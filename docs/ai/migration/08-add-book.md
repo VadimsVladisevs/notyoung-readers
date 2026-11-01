@@ -1,6 +1,6 @@
 # Phase 8: Add a book
 
-Part of [PLAN.md](PLAN.md). Status: ◐
+Part of [PLAN.md](PLAN.md). Status: ☑ (done 2026-11-01)
 
 ## Goal
 The logged-in admin adds a book from the UI. `POST /api/books/add` already exists and Phase 7 limits it to ADMIN, but the UI has no add form (Phase 4 removed the unused dialogs).
@@ -23,6 +23,7 @@ Done when a logged-in user adds a book from the UI and anonymous adds are refuse
 - Covers are rendered in **five** places, not four: `random-book-dialog` too.
 - Only 401 shows «Сессия истекла», like the approval dialog. A 403 (missing CSRF token, no ADMIN role) gets the generic error.
 - `Autocomplete` adds ~70 kB to the one JS chunk (now ~820 kB).
+- The first staging deploy after the push still served the Phase 7 build (no «Добавить книгу», `cover-placeholder.svg` 404). A manual redeploy fixed it. To check what staging serves: the bundle name in `/` and `GET /cover-placeholder.svg`.
 
 ## Verify
 - [x] `./mvnw verify` green: 0 failures.
@@ -32,4 +33,4 @@ Done when a logged-in user adds a book from the UI and anonymous adds are refuse
   - browser logged out: no «Добавить книгу»; logged in: the item shows
   - empty submit: fields red + «Заполните все поля», no request; tag suggestions list the existing tags
   - add without a cover: the dialog closes, the book shows with the placeholder in the library and the selection dialog; stored trimmed, no `image`, status `new`; no console errors
-- [ ] Staging: the same check.
+- [x] Staging (user, `caecbfc`, after a redeploy): logged in, «Добавить книгу» shows and works. Checked by curl: the served bundle matches the local build, the placeholder is served (200), anonymous add without a CSRF token → 403.
