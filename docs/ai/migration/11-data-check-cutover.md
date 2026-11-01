@@ -51,7 +51,7 @@ Replace the legacy Node service on Render with the new Docker image. It runs aga
   - `docker build` + `docker run -p 8090:8080` against compose Mongo
   - the dev server shows covers (through the backend, from the local GridFS)
 - [ ] **8. Commit** `Phase 11 (part 1): …`. **Push** (confirm first); staging redeploys the final image.
-- [ ] **9. Staging walk-through (user, guided):** every flow, including the ones Phases 7–10 add:
+- [ ] **9. Staging walk-through (user, guided):** walk-through done 2026-11-01 on `ea0e48d`, no bugs found; open: prod counts re-run, cold start (first try 0.79 s = service was still warm); every flow, including the ones Phases 7–10 add:
   - browse all lists and the swiper
   - statistics toggle
   - random pick (`new` only)
@@ -70,6 +70,7 @@ Replace the legacy Node service on Render with the new Docker image. It runs aga
   2. Atlas, prod `readersDB` (the user runs it): `db.users.updateOne({username: "admin"}, {$set: {roles: ["ADMIN"]}})`. This is additive, and the legacy app ignores it. If the legacy service has `ADMIN_PASSWORD_HASH` set, remove it.
   3. Settings → Build → Source → Docker, Dockerfile `./Dockerfile`, health check path `/actuator/health`. Remove the Node build/start commands.
   4. Atlas → Database Access → rotate the prod user's password, then update `DB_URL` on Render right away (the old app breaks from this moment).
+     Prod env today (checked 2026-11-01): only `DB_URL`; build command `yarn` goes away with the Docker runtime.
   5. Deploy.
 - [ ] **13. Prod smoke (read-only):**
   - health UP
