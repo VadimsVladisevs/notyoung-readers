@@ -1,0 +1,31 @@
+server:
+  port: ${PORT:8080}
+  servlet:
+    session:
+      cookie:
+        http-only: true
+        secure: true
+        same-site: lax
+
+spring:
+  servlet:
+    multipart:
+      # Covers: JPEG up to 2 MB (CoverService.MAX_BYTES)
+      max-file-size: 2MB
+      max-request-size: 3MB
+  mongodb:
+    uri: ${DB_URL}
+    database: ${DB_NAME:readersDB}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health
+  endpoint:
+    health:
+      show-details: never
+
+logging:
+  level:
+    root: INFO

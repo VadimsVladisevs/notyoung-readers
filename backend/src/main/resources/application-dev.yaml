@@ -1,0 +1,7 @@
+spring:
+  mongodb:
+    uri: ${DB_URL:mongodb://localhost:27017/readersDB}
+
+logging:
+  level:
+    org.readersclub: DEBUG

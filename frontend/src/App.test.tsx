@@ -1,0 +1,868 @@
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
+import { http, HttpResponse } from 'msw';
+import App from './App';
+import { server } from './test/server';
+import { allBooks, current, finishedHigh, finishedLow, newAnna, newBoris } from './test/books';
+import { CSRF_HEADER } from './services/api';
+import { Book } from './types';
+
+// jsdom has no canvas.
+vi.mock('react-chartjs-2', () => ({
+  Bar: () => <output data-testid="chart" />,
+}));
+
+const ADMIN = { username: 'admin', roles: ['ADMIN'] };
+const PASSWORD = 'secret';
+
+/** The backend session as MSW sees it: who /me returns, and a working login/logout. */
+const mockAuth = (loggedIn: boolean, account: { username: string; roles: string[] } = ADMIN) => {
+  let user: { username: string; roles: string[] } | null = loggedIn ? account : null;
+  server.use(
+    http.get('/api/auth/me', () =>
+      user ? HttpResponse.json(user) : HttpResponse.json({ status: 401 }, { status: 401 })),
+    http.post('/api/auth/login', async ({ request }) => {
+      const { username, password } = (await request.json()) as { username: string; password: string };
+      if (username !== ADMIN.username || password !== PASSWORD) {
+        return HttpResponse.json({ status: 401 }, { status: 401 });
+      }
+      user = ADMIN;
+      return HttpResponse.json(ADMIN);
+    }),
+    http.post('/api/auth/logout', () => {
+      user = null;
+      return new HttpResponse(null, { status: 204 });
+    }),
+  );
+};
+
+/** Mocks the write endpoints and records the calls in order. */
+const mockWrites = () => {
+  const calls: { path: string; csrf: string | null; password: string | null; body?: unknown }[] = [];
+  const record = async (request: Request) => {
+    const text = await request.clone().text();
+    calls.push({
+      path: new URL(request.url).pathname,
+      csrf: request.headers.get(CSRF_HEADER),
+      password: request.headers.get('X-Club-Password'),
+      body: text ? JSON.parse(text) : undefined,
+    });
+  };
+  server.use(
+    http.patch('/api/books/:id/finish', async ({ request }) => {
+      await record(request);
+      return HttpResponse.json({ ...current, status: 'finished' });
+    }),
+    http.patch('/api/books/:id/start', async ({ request }) => {
+      await record(request);
+      return HttpResponse.json({ ...newBoris, status: 'progress' });
+    }),
+  );
+  return calls;
+};
+
+/**
+ * Mocks the cover upload: records each call; answers `status`, with the book on 200. Records headers only:
+ * jsdom's File doesn't survive Node's fetch, so the multipart body is checked in `api.test.ts`.
+ */
+const mockCover = (status = 200) => {
+  const uploads: { path: string; csrf: string | null; multipart: boolean }[] = [];
+  server.use(
+    http.put('/api/books/:id/cover', ({ request, params }) => {
+      uploads.push({
+        path: new URL(request.url).pathname,
+        csrf: request.headers.get(CSRF_HEADER),
+        multipart: request.headers.get('content-type')?.startsWith('multipart/form-data') ?? false,
+      });
+      return status === 200
+        ? HttpResponse.json({ ...current, id: params.id, image: 'images/cover.jpeg' })
+        : HttpResponse.json({ status }, { status });
+    }),
+  );
+  return uploads;
+};
+
+const jpeg = () => new File([new Uint8Array([0xff, 0xd8, 0xff])], 'photo.jpg', { type: 'image/jpeg' });
+
+const renderApp = async ({ loggedIn = true, account = ADMIN } = {}) => {
+  mockAuth(loggedIn, account);
+  const user = userEvent.setup();
+  render(<App />);
+  // The finished list shows once the books are loaded.
+  await screen.findAllByText(finishedHigh.title, { exact: false });
+  // The auth state is known once the account button names the user (or no one).
+  await screen.findByRole('button', { name: loggedIn ? `Аккаунт ${account.username}` : 'Аккаунт' });
+  return user;
+};
+
+const openAccountMenu = async (user: ReturnType<typeof userEvent.setup>) => {
+  await user.click(screen.getByRole('button', { name: /^Аккаунт/ }));
+  return screen.findByRole('menu');
+};
+
+const clickMenuItem = async (user: ReturnType<typeof userEvent.setup>, name: string) => {
+  const menu = await openAccountMenu(user);
+  await user.click(within(menu).getByRole('menuitem', { name }));
+};
+
+/** Flips the admin's edit mode in the account menu, then closes the menu. */
+const toggleEditMode = async (user: ReturnType<typeof userEvent.setup>) => {
+  const menu = await openAccountMenu(user);
+  await user.click(within(menu).getByRole('menuitemcheckbox', { name: 'Режим редактирования' }));
+  await user.keyboard('{Escape}');
+  await waitFor(() => expect(screen.queryByRole('menu')).not.toBeInTheDocument());
+};
+
+const openSelectionDialog = async (user: ReturnType<typeof userEvent.setup>) => {
+  await user.click(screen.getAllByRole('button', { name: 'Выбор книги' })[0]);
+  return screen.findByRole('dialog');
+};
+
+describe('App', () => {
+  beforeEach(() => {
+    document.cookie = 'XSRF-TOKEN=tok; path=/';
+  });
+
+  afterEach(() => {
+    document.cookie = 'XSRF-TOKEN=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT';
+  });
+
+  it('renders the club page with the loaded books', async () => {
+    await renderApp({ loggedIn: false });
+
+    expect(screen.getAllByText('Клуб "НЕЮНЫЙ ЧИТАТЕЛЬ"').length).toBeGreaterThan(0);
+    expect(screen.getAllByText(current.title, { exact: false }).length).toBeGreaterThan(0);
+  });
+
+  it('shows the current book first, then the library, then the finished books', async () => {
+    await renderApp({ loggedIn: false });
+
+    expect(screen.getAllByRole('heading', { level: 1 }).map((h) => h.textContent)).toEqual(['Выбранная книжка']);
+    const sections = screen.getAllByRole('heading', { level: 2 })
+      .map((h) => h.textContent)
+      .filter((text) => ['Библиотека клуба', 'Прочитанные книжки'].includes(text ?? ''));
+    expect(sections).toEqual(['Библиотека клуба', 'Прочитанные книжки']);
+  });
+
+  describe('login', () => {
+    const openLoginDialog = async (user: ReturnType<typeof userEvent.setup>) => {
+      await clickMenuItem(user, 'Войти');
+      return screen.findByRole('dialog', { name: /Вход/ });
+    };
+
+    const logIn = async (user: ReturnType<typeof userEvent.setup>) => {
+      const dialog = await openLoginDialog(user);
+      await user.type(within(dialog).getByLabelText('Логин'), ADMIN.username);
+      await user.type(within(dialog).getByLabelText('Пароль'), PASSWORD);
+      await user.click(within(dialog).getByRole('button', { name: 'Войти' }));
+      await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
+    };
+
+    it('offers only «Войти» in the account menu while logged out', async () => {
+      const user = await renderApp({ loggedIn: false });
+      const menu = await openAccountMenu(user);
+
+      expect(within(menu).getAllByRole('menuitem').map((item) => item.textContent)).toEqual(['Войти']);
+      expect(within(menu).queryByRole('menuitemcheckbox')).not.toBeInTheDocument();
+    });
+
+    it('shows the user, the edit-mode switch and «Выйти» for the admin', async () => {
+      const user = await renderApp();
+      const menu = await openAccountMenu(user);
+
+      expect(within(menu).getByText(ADMIN.username)).toBeInTheDocument();
+      expect(within(menu).getByRole('menuitemcheckbox', { name: 'Режим редактирования' }))
+        .toHaveAttribute('aria-checked', 'false');
+      expect(within(menu).getByRole('menuitem', { name: 'Выйти' })).toBeInTheDocument();
+    });
+
+    it('has no edit-mode switch for a user without the ADMIN role', async () => {
+      const user = await renderApp({ account: { username: 'reader', roles: [] } });
+      const menu = await openAccountMenu(user);
+
+      expect(within(menu).queryByRole('menuitemcheckbox')).not.toBeInTheDocument();
+      expect(within(menu).getByRole('menuitem', { name: 'Выйти' })).toBeInTheDocument();
+    });
+
+    it('hides book selection while logged out', async () => {
+      await renderApp({ loggedIn: false });
+
+      expect(screen.queryByRole('button', { name: 'Выбор книги' })).not.toBeInTheDocument();
+      expect(screen.getAllByRole('button', { name: 'Статистика' }).length).toBeGreaterThan(0);
+    });
+
+    it('logs in and shows book selection', async () => {
+      const user = await renderApp({ loggedIn: false });
+      const dialog = await openLoginDialog(user);
+
+      await user.type(within(dialog).getByLabelText('Логин'), ADMIN.username);
+      await user.type(within(dialog).getByLabelText('Пароль'), PASSWORD);
+      await user.click(within(dialog).getByRole('button', { name: 'Войти' }));
+
+      await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
+      expect(screen.getAllByRole('button', { name: 'Выбор книги' }).length).toBeGreaterThan(0);
+      expect(screen.getByRole('button', { name: `Аккаунт ${ADMIN.username}` })).toBeInTheDocument();
+    });
+
+    it('shows an error on a wrong password and stays logged out', async () => {
+      const user = await renderApp({ loggedIn: false });
+      const dialog = await openLoginDialog(user);
+
+      await user.type(within(dialog).getByLabelText('Логин'), ADMIN.username);
+      await user.type(within(dialog).getByLabelText('Пароль'), 'wrong');
+      await user.click(within(dialog).getByRole('button', { name: 'Войти' }));
+
+      expect(await within(dialog).findByText('Неверный логин или пароль')).toBeInTheDocument();
+      expect(screen.queryByRole('button', { name: 'Выбор книги' })).not.toBeInTheDocument();
+    });
+
+    it('asks for both fields before calling the backend', async () => {
+      let called = false;
+      const user = await renderApp({ loggedIn: false });
+      server.use(http.post('/api/auth/login', () => {
+        called = true;
+        return HttpResponse.json(ADMIN);
+      }));
+      const dialog = await openLoginDialog(user);
+
+      await user.click(within(dialog).getByRole('button', { name: 'Войти' }));
+
+      expect(within(dialog).getByText('Введите логин и пароль')).toBeInTheDocument();
+      expect(called).toBe(false);
+    });
+
+    it('logs out and hides book selection', async () => {
+      const user = await renderApp();
+
+      await clickMenuItem(user, 'Выйти');
+
+      await screen.findByRole('button', { name: 'Аккаунт' });
+      expect(screen.queryByRole('button', { name: 'Выбор книги' })).not.toBeInTheDocument();
+    });
+
+    it('starts the next login with edit mode off', async () => {
+      const user = await renderApp();
+      await toggleEditMode(user);
+      expect(screen.getAllByRole('button', { name: 'Добавить книгу' }).length).toBeGreaterThan(0);
+
+      await clickMenuItem(user, 'Выйти');
+      await screen.findByRole('button', { name: 'Аккаунт' });
+      await logIn(user);
+
+      expect(screen.queryByRole('button', { name: 'Добавить книгу' })).not.toBeInTheDocument();
+      expect(screen.queryAllByRole('button', { name: /^Изменить/ })).toHaveLength(0);
+    });
+
+    it('shows the select button for no current book only when logged in', async () => {
+      server.use(http.get('/api/books', () => HttpResponse.json(allBooks.filter((b) => b.status !== 'progress'))));
+      const user = await renderApp({ loggedIn: false });
+
+      expect(screen.queryByRole('button', { name: 'Выбрать книгу' })).not.toBeInTheDocument();
+
+      await logIn(user);
+
+      expect(await screen.findByRole('button', { name: 'Выбрать книгу' })).toBeInTheDocument();
+    });
+  });
+
+  describe('selection dialog', () => {
+    it('lists only new books and filters them by tag', async () => {
+      const user = await renderApp();
+      const dialog = await openSelectionDialog(user);
+
+      expect(within(dialog).getByText(newAnna.title)).toBeInTheDocument();
+      expect(within(dialog).getByText(newBoris.title)).toBeInTheDocument();
+      expect(within(dialog).queryByText(current.title)).not.toBeInTheDocument();
+
+      await user.type(within(dialog).getByPlaceholderText('Поиск книги..'), 'борис');
+
+      expect(within(dialog).queryByText(newAnna.title)).not.toBeInTheDocument();
+      expect(within(dialog).getByText(newBoris.title)).toBeInTheDocument();
+    });
+
+    it('filters by title when that filter is chosen', async () => {
+      const user = await renderApp();
+      const dialog = await openSelectionDialog(user);
+
+      await user.click(within(dialog).getByRole('combobox'));
+      await user.click(await screen.findByRole('option', { name: 'Название' }));
+      await user.type(within(dialog).getByPlaceholderText('Поиск книги..'), 'мастер');
+
+      expect(within(dialog).getByText(newAnna.title)).toBeInTheDocument();
+      expect(within(dialog).queryByText(newBoris.title)).not.toBeInTheDocument();
+    });
+
+    it('confirms only when books are checked, then picks among them', async () => {
+      const user = await renderApp();
+      const dialog = await openSelectionDialog(user);
+      const confirm = within(dialog).getByRole('button', { name: 'Подтвердить' });
+
+      expect(confirm).toBeDisabled();
+
+      await user.click(within(dialog).getByText(newBoris.title));
+
+      expect(within(dialog).getByText('1')).toBeInTheDocument();
+      expect(confirm).toBeEnabled();
+
+      await user.click(confirm);
+
+      const random = await screen.findByRole('dialog', { name: /Случайная книга/ });
+      expect(within(random).getByText(newBoris.title)).toBeInTheDocument();
+    });
+
+    it('asks the backend for a random new book', async () => {
+      let url = '';
+      server.use(http.get('/api/books/random', ({ request }) => {
+        url = request.url;
+        return HttpResponse.json(newAnna);
+      }));
+      const user = await renderApp();
+      const dialog = await openSelectionDialog(user);
+
+      await user.click(within(dialog).getByRole('button', { name: 'Случайный выбор' }));
+
+      const random = await screen.findByRole('dialog', { name: /Случайная книга/ });
+      expect(within(random).getByText(newAnna.title)).toBeInTheDocument();
+      expect(new URL(url).search).toBe('');
+    });
+  });
+
+  describe('approval dialog', () => {
+    const openApprovalDialog = async () => {
+      const user = await renderApp();
+      const dialog = await openSelectionDialog(user);
+      await user.click(within(dialog).getByText(newBoris.title));
+      await user.click(within(dialog).getByRole('button', { name: 'Подтвердить' }));
+      const random = await screen.findByRole('dialog', { name: /Случайная книга/ });
+      await user.click(within(random).getByRole('button', { name: 'Выбрать эту книгу' }));
+      const approval = await screen.findByRole('dialog', { name: /Подтверждение выбора/ });
+      return { user, approval };
+    };
+
+    it('requires a rating from 1 to 10 and asks for no password', async () => {
+      const calls = mockWrites();
+      const { user, approval } = await openApprovalDialog();
+      const confirm = within(approval).getByRole('button', { name: 'Подтвердить' });
+
+      expect(within(approval).getAllByRole('textbox')).toHaveLength(1);
+      expect(within(approval).queryByLabelText('Код подтверждения')).not.toBeInTheDocument();
+
+      await user.click(confirm);
+      expect(within(approval).getByText('Введите оценку от 1 до 10')).toBeInTheDocument();
+
+      const ratingField = within(approval).getByRole('textbox');
+      await user.type(ratingField, '0');
+      expect(ratingField).toHaveValue('');
+      await user.type(ratingField, '11');
+      expect(ratingField).toHaveValue('1');
+      expect(calls).toEqual([]);
+    });
+
+    it('finishes the current book, then starts the chosen one, with the CSRF token', async () => {
+      const calls = mockWrites();
+      const { user, approval } = await openApprovalDialog();
+
+      await user.type(within(approval).getByRole('textbox'), '8,5');
+      await user.click(within(approval).getByRole('button', { name: 'Подтвердить' }));
+
+      await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
+      expect(calls).toEqual([
+        { path: `/api/books/${current.id}/finish`, csrf: 'tok', password: null, body: { rating: '8.50' } },
+        { path: `/api/books/${newBoris.id}/start`, csrf: 'tok', password: null, body: undefined },
+      ]);
+    });
+
+    it('says the session expired on 401 and hides book selection', async () => {
+      mockWrites();
+      server.use(http.patch('/api/books/:id/finish', () => HttpResponse.json({ status: 401 }, { status: 401 })));
+      const { user, approval } = await openApprovalDialog();
+
+      await user.type(within(approval).getByRole('textbox'), '9');
+      await user.click(within(approval).getByRole('button', { name: 'Подтвердить' }));
+
+      expect(await within(approval).findByText('Сессия истекла. Войдите снова.')).toBeInTheDocument();
+      // hidden: the open dialog makes the app bar aria-hidden
+      expect(screen.queryByRole('button', { name: 'Выбор книги', hidden: true })).not.toBeInTheDocument();
+    });
+
+    it('shows a generic error when a write fails', async () => {
+      mockWrites();
+      server.use(http.patch('/api/books/:id/start', () => HttpResponse.json({ status: 409 }, { status: 409 })));
+      const { user, approval } = await openApprovalDialog();
+
+      await user.type(within(approval).getByRole('textbox'), '9');
+      await user.click(within(approval).getByRole('button', { name: 'Подтвердить' }));
+
+      expect(await within(approval).findByText('Не удалось сохранить. Попробуйте ещё раз.')).toBeInTheDocument();
+    });
+  });
+
+  describe('add book', () => {
+    const NEW_BOOK = { title: 'Вий', author: 'Гоголь', tag: 'вера', wiki: 'Повесть' };
+
+    /** Mocks the add endpoint: records the body and returns the books with the new one from then on. */
+    const mockAdd = () => {
+      const bodies: unknown[] = [];
+      let books = allBooks;
+      server.use(
+        http.get('/api/books', () => HttpResponse.json(books)),
+        http.post('/api/books/add', async ({ request }) => {
+          const body = (await request.json()) as typeof NEW_BOOK;
+          bodies.push({ body, csrf: request.headers.get(CSRF_HEADER) });
+          const added = { ...current, ...body, id: 'a1', status: 'new' as const, image: undefined };
+          books = [...allBooks, added];
+          return HttpResponse.json(added, { status: 201 });
+        }),
+      );
+      return bodies;
+    };
+
+    const openAddDialog = async (user: ReturnType<typeof userEvent.setup>) => {
+      await toggleEditMode(user);
+      await user.click(screen.getAllByRole('button', { name: 'Добавить книгу' })[0]);
+      return screen.findByRole('dialog', { name: /Новая книга/ });
+    };
+
+    const fill = async (user: ReturnType<typeof userEvent.setup>, dialog: HTMLElement, book: Partial<typeof NEW_BOOK>) => {
+      if (book.title) await user.type(within(dialog).getByLabelText('Название'), book.title);
+      if (book.author) await user.type(within(dialog).getByLabelText('Автор'), book.author);
+      if (book.tag) await user.type(within(dialog).getByLabelText('Участник'), book.tag);
+      if (book.wiki) await user.type(within(dialog).getByLabelText('Описание'), book.wiki);
+    };
+
+    it('is hidden while logged out', async () => {
+      await renderApp({ loggedIn: false });
+
+      expect(screen.queryByRole('button', { name: 'Добавить книгу' })).not.toBeInTheDocument();
+    });
+
+    it('shows only in edit mode for the admin', async () => {
+      const user = await renderApp();
+      expect(screen.queryByRole('button', { name: 'Добавить книгу' })).not.toBeInTheDocument();
+      // Book selection doesn't depend on edit mode.
+      expect(screen.getAllByRole('button', { name: 'Выбор книги' }).length).toBeGreaterThan(0);
+
+      await toggleEditMode(user);
+      expect(screen.getAllByRole('button', { name: 'Добавить книгу' }).length).toBeGreaterThan(0);
+
+      await toggleEditMode(user);
+      expect(screen.queryByRole('button', { name: 'Добавить книгу' })).not.toBeInTheDocument();
+    });
+
+    it('adds a book without a cover, which then shows the placeholder', async () => {
+      const bodies = mockAdd();
+      const user = await renderApp();
+      const dialog = await openAddDialog(user);
+
+      await fill(user, dialog, { ...NEW_BOOK, title: '  Вий ' });
+      await user.click(within(dialog).getByRole('button', { name: 'Добавить' }));
+
+      await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
+      expect(bodies).toEqual([{ body: NEW_BOOK, csrf: 'tok' }]);
+      const covers = await screen.findAllByRole('img', { name: 'Вий' });
+      expect(covers[0]).toHaveAttribute('src', 'cover-placeholder.svg');
+    });
+
+    it('suggests existing tags', async () => {
+      const user = await renderApp();
+      const dialog = await openAddDialog(user);
+
+      await user.type(within(dialog).getByLabelText('Участник'), 'бо');
+
+      expect(await screen.findByRole('option', { name: 'борис' })).toBeInTheDocument();
+      expect(screen.queryByRole('option', { name: 'анна' })).not.toBeInTheDocument();
+    });
+
+    it('asks for every field before calling the backend', async () => {
+      const bodies = mockAdd();
+      const user = await renderApp();
+      const dialog = await openAddDialog(user);
+
+      await fill(user, dialog, { title: 'Вий', author: 'Гоголь', tag: 'вера', wiki: '   ' });
+      await user.click(within(dialog).getByRole('button', { name: 'Добавить' }));
+
+      expect(within(dialog).getByText('Заполните все поля')).toBeInTheDocument();
+      expect(within(dialog).getByLabelText('Описание')).toHaveAttribute('aria-invalid', 'true');
+      expect(within(dialog).getByLabelText('Название')).toHaveAttribute('aria-invalid', 'false');
+      expect(bodies).toEqual([]);
+    });
+
+    it('says the session expired on 401 and hides the menu item', async () => {
+      server.use(http.post('/api/books/add', () => HttpResponse.json({ status: 401 }, { status: 401 })));
+      const user = await renderApp();
+      const dialog = await openAddDialog(user);
+
+      await fill(user, dialog, NEW_BOOK);
+      await user.click(within(dialog).getByRole('button', { name: 'Добавить' }));
+
+      expect(await within(dialog).findByText('Сессия истекла. Войдите снова.')).toBeInTheDocument();
+      expect(screen.queryByRole('button', { name: 'Добавить книгу', hidden: true })).not.toBeInTheDocument();
+    });
+
+    it('shows a generic error when saving fails', async () => {
+      server.use(http.post('/api/books/add', () => HttpResponse.json({ status: 400 }, { status: 400 })));
+      const user = await renderApp();
+      const dialog = await openAddDialog(user);
+
+      await fill(user, dialog, NEW_BOOK);
+      await user.click(within(dialog).getByRole('button', { name: 'Добавить' }));
+
+      expect(await within(dialog).findByText('Не удалось сохранить. Попробуйте ещё раз.')).toBeInTheDocument();
+    });
+
+    it('uploads the chosen cover as multipart after adding the book', async () => {
+      const bodies = mockAdd();
+      const uploads = mockCover();
+      const user = await renderApp();
+      const dialog = await openAddDialog(user);
+
+      await fill(user, dialog, NEW_BOOK);
+      await user.upload(within(dialog).getByLabelText('Файл обложки'), jpeg());
+      expect(within(dialog).getByRole('img', { name: 'Обложка' })).toHaveAttribute('src', expect.stringMatching(/^blob:/));
+      await user.click(within(dialog).getByRole('button', { name: 'Добавить' }));
+
+      await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
+      expect(bodies).toHaveLength(1);
+      expect(uploads).toEqual([{ path: '/api/books/a1/cover', csrf: 'tok', multipart: true }]);
+    });
+
+    it('keeps the added book and blocks a second add when the cover upload fails', async () => {
+      const bodies = mockAdd();
+      mockCover(500);
+      const user = await renderApp();
+      const dialog = await openAddDialog(user);
+
+      await fill(user, dialog, NEW_BOOK);
+      await user.upload(within(dialog).getByLabelText('Файл обложки'), jpeg());
+      await user.click(within(dialog).getByRole('button', { name: 'Добавить' }));
+
+      expect(await within(dialog).findByText(/Книга добавлена, но обложку загрузить не удалось/)).toBeInTheDocument();
+      expect(within(dialog).getByRole('button', { name: 'Добавить' })).toBeDisabled();
+      expect(bodies).toHaveLength(1);
+      expect((await screen.findAllByRole('img', { name: 'Вий', hidden: true })).length).toBeGreaterThan(0);
+    });
+  });
+
+  describe('edit book', () => {
+    const editButtons = (title: string) => screen.queryAllByRole('button', { name: `Изменить «${title}»` });
+
+    /** Mocks update and delete: records each call and serves the changed books from then on. */
+    const mockEdit = () => {
+      const calls: { method: string; path: string; csrf: string | null; body?: unknown }[] = [];
+      let books = allBooks;
+      server.use(
+        http.get('/api/books', () => HttpResponse.json(books)),
+        http.patch('/api/books/:id/update', async ({ request, params }) => {
+          const body = (await request.json()) as Record<string, unknown>;
+          calls.push({ method: 'PATCH', path: new URL(request.url).pathname, csrf: request.headers.get(CSRF_HEADER), body });
+          books = books.map((b) => (b.id === params.id ? { ...b, ...body } : b));
+          return HttpResponse.json(books.find((b) => b.id === params.id));
+        }),
+        http.delete('/api/books/:id', ({ request, params }) => {
+          calls.push({ method: 'DELETE', path: new URL(request.url).pathname, csrf: request.headers.get(CSRF_HEADER) });
+          books = books.filter((b) => b.id !== params.id);
+          return new HttpResponse(null, { status: 200 });
+        }),
+      );
+      return calls;
+    };
+
+    const openEditDialog = async (user: ReturnType<typeof userEvent.setup>, title: string) => {
+      await toggleEditMode(user);
+      await user.click(editButtons(title)[0]);
+      return screen.findByRole('dialog', { name: /Редактировать книгу/ });
+    };
+
+    const chooseStatus = async (user: ReturnType<typeof userEvent.setup>, dialog: HTMLElement, status: string) => {
+      await user.click(within(dialog).getByRole('combobox', { name: 'Статус' }));
+      await user.click(await screen.findByRole('option', { name: status }));
+    };
+
+    it('is hidden while logged out', async () => {
+      await renderApp({ loggedIn: false });
+
+      expect(screen.queryAllByRole('button', { name: /^Изменить/ })).toHaveLength(0);
+    });
+
+    it('is hidden for a logged-in user without the ADMIN role', async () => {
+      await renderApp({ account: { username: 'reader', roles: [] } });
+
+      expect(screen.queryAllByRole('button', { name: /^Изменить/ })).toHaveLength(0);
+    });
+
+    it('hides the pencils until the admin turns edit mode on', async () => {
+      const user = await renderApp();
+      expect(screen.queryAllByRole('button', { name: /^Изменить/ })).toHaveLength(0);
+
+      await toggleEditMode(user);
+      expect(screen.queryAllByRole('button', { name: /^Изменить/ }).length).toBeGreaterThan(0);
+    });
+
+    it('shows a pencil on the library, current and finished books in edit mode', async () => {
+      const user = await renderApp();
+      await toggleEditMode(user);
+
+      expect(editButtons(newAnna.title)).toHaveLength(1); // library
+      expect(editButtons(current.title)).toHaveLength(2); // library + current book
+      expect(editButtons(finishedHigh.title)).toHaveLength(2); // library + finished list
+    });
+
+    it('opens filled with the book and saves the edit trimmed, with the CSRF token', async () => {
+      const calls = mockEdit();
+      const user = await renderApp();
+      const dialog = await openEditDialog(user, finishedLow.title);
+
+      expect(within(dialog).getByLabelText('Название')).toHaveValue(finishedLow.title);
+      expect(within(dialog).getByLabelText('Оценка')).toHaveValue('7.5');
+      const title = within(dialog).getByLabelText('Название');
+      await user.clear(title);
+      await user.type(title, '  Шинель ');
+      await user.click(within(dialog).getByRole('button', { name: 'Сохранить' }));
+
+      await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
+      expect(calls).toEqual([{
+        method: 'PATCH',
+        path: `/api/books/${finishedLow.id}/update`,
+        csrf: 'tok',
+        body: { title: 'Шинель', author: finishedLow.author, tag: finishedLow.tag, wiki: finishedLow.wiki, status: 'finished', rating: 7.5 },
+      }]);
+      expect((await screen.findAllByText('Шинель', { exact: false })).length).toBeGreaterThan(0);
+    });
+
+    it('shows the rating only for a finished book and sends none otherwise', async () => {
+      const calls = mockEdit();
+      const user = await renderApp();
+      const dialog = await openEditDialog(user, finishedLow.title);
+
+      await chooseStatus(user, dialog, 'В списке');
+      expect(within(dialog).queryByLabelText('Оценка')).not.toBeInTheDocument();
+      await user.click(within(dialog).getByRole('button', { name: 'Сохранить' }));
+
+      await waitFor(() => expect(calls).toHaveLength(1));
+      expect(calls[0].body).toEqual({
+        title: finishedLow.title, author: finishedLow.author, tag: finishedLow.tag, wiki: finishedLow.wiki, status: 'new',
+      });
+    });
+
+    it('needs a rating from 1 to 10 when the status is finished', async () => {
+      const calls = mockEdit();
+      const user = await renderApp();
+      const dialog = await openEditDialog(user, newAnna.title);
+
+      await chooseStatus(user, dialog, 'Прочитана');
+      await user.click(within(dialog).getByRole('button', { name: 'Сохранить' }));
+
+      expect(within(dialog).getByText('Введите оценку от 1 до 10')).toBeInTheDocument();
+      expect(calls).toEqual([]);
+    });
+
+    it('asks for every field before calling the backend', async () => {
+      const calls = mockEdit();
+      const user = await renderApp();
+      const dialog = await openEditDialog(user, newAnna.title);
+
+      await user.clear(within(dialog).getByLabelText('Автор'));
+      await user.click(within(dialog).getByRole('button', { name: 'Сохранить' }));
+
+      expect(within(dialog).getByText('Заполните все поля')).toBeInTheDocument();
+      expect(within(dialog).getByLabelText('Автор')).toHaveAttribute('aria-invalid', 'true');
+      expect(calls).toEqual([]);
+    });
+
+    it('explains a 409: another book is already in progress', async () => {
+      server.use(http.patch('/api/books/:id/update', () => HttpResponse.json({ status: 409 }, { status: 409 })));
+      const user = await renderApp();
+      const dialog = await openEditDialog(user, newAnna.title);
+
+      await chooseStatus(user, dialog, 'Читаем сейчас');
+      await user.click(within(dialog).getByRole('button', { name: 'Сохранить' }));
+
+      expect(await within(dialog).findByText('Уже есть текущая книга. Сначала смените её статус.')).toBeInTheDocument();
+    });
+
+    it('says the session expired on 401 and hides the pencils', async () => {
+      server.use(http.patch('/api/books/:id/update', () => HttpResponse.json({ status: 401 }, { status: 401 })));
+      const user = await renderApp();
+      const dialog = await openEditDialog(user, newAnna.title);
+
+      await user.click(within(dialog).getByRole('button', { name: 'Сохранить' }));
+
+      expect(await within(dialog).findByText('Сессия истекла. Войдите снова.')).toBeInTheDocument();
+      expect(screen.queryAllByRole('button', { name: /^Изменить/, hidden: true })).toHaveLength(0);
+    });
+
+    it('shows the current cover and uploads a new one after saving', async () => {
+      const calls = mockEdit();
+      const uploads = mockCover();
+      const user = await renderApp();
+      const dialog = await openEditDialog(user, newAnna.title);
+
+      expect(within(dialog).getByRole('img', { name: 'Обложка' }))
+        .toHaveAttribute('src', `images/${newAnna.id}.jpg?v=${encodeURIComponent(newAnna.updatedAt)}`);
+      await user.upload(within(dialog).getByLabelText('Файл обложки'), jpeg());
+      await user.click(within(dialog).getByRole('button', { name: 'Сохранить' }));
+
+      await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
+      expect(calls.map((c) => c.method)).toEqual(['PATCH']);
+      expect(uploads).toEqual([{ path: `/api/books/${newAnna.id}/cover`, csrf: 'tok', multipart: true }]);
+    });
+
+    it('says the edit was saved when the cover upload fails', async () => {
+      const calls = mockEdit();
+      mockCover(400);
+      const user = await renderApp();
+      const dialog = await openEditDialog(user, newAnna.title);
+
+      await user.upload(within(dialog).getByLabelText('Файл обложки'), jpeg());
+      await user.click(within(dialog).getByRole('button', { name: 'Сохранить' }));
+
+      expect(await within(dialog).findByText(/Изменения сохранены, но обложку загрузить не удалось/)).toBeInTheDocument();
+      expect(calls).toHaveLength(1);
+    });
+
+    it('deletes only after the confirmation', async () => {
+      const calls = mockEdit();
+      const user = await renderApp();
+      const dialog = await openEditDialog(user, newAnna.title);
+
+      await user.click(within(dialog).getByRole('button', { name: 'Удалить' }));
+      expect(calls).toEqual([]);
+      await user.click(within(dialog).getByRole('button', { name: 'Да, удалить' }));
+
+      await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
+      expect(calls).toEqual([{ method: 'DELETE', path: `/api/books/${newAnna.id}`, csrf: 'tok' }]);
+      await waitFor(() => expect(editButtons(newAnna.title)).toHaveLength(0));
+    });
+
+    it('keeps the book when the confirmation is cancelled', async () => {
+      const calls = mockEdit();
+      const user = await renderApp();
+      const dialog = await openEditDialog(user, newAnna.title);
+
+      await user.click(within(dialog).getByRole('button', { name: 'Удалить' }));
+      await user.click(within(dialog).getByRole('button', { name: 'Нет' }));
+
+      expect(within(dialog).getByRole('button', { name: 'Сохранить' })).toBeInTheDocument();
+      expect(calls).toEqual([]);
+    });
+  });
+  describe('library filter', () => {
+    const library = () => within(document.getElementById('library')!);
+    // Sorted: the order is the books context's, not the point here.
+    const covers = () => library().queryAllByRole('img').map((img) => img.getAttribute('alt')).sort();
+
+    it('finds books by title, author or member, ignoring case and ё', async () => {
+      const user = await renderApp({ loggedIn: false });
+      const search = screen.getByRole('searchbox', { name: 'Поиск по названию, автору или участнику' });
+
+      await user.type(search, 'ГОГОЛЬ');
+      expect(covers()).toEqual([finishedLow.title]);
+
+      await user.clear(search);
+      await user.type(search, 'борис');
+      expect(covers()).toEqual([current.title, newBoris.title, finishedHigh.title].sort());
+    });
+
+    it('filters by status and says when nothing matches', async () => {
+      const user = await renderApp({ loggedIn: false });
+
+      await user.click(library().getByRole('button', { name: 'Читаем' }));
+      expect(covers()).toEqual([current.title]);
+      expect(library().getByRole('button', { name: 'Читаем' })).toHaveAttribute('aria-pressed', 'true');
+
+      await user.type(screen.getByRole('searchbox'), 'гоголь');
+      expect(covers()).toEqual([]);
+      expect(library().getByText('Ничего не найдено')).toBeInTheDocument();
+
+      await user.click(library().getByRole('button', { name: 'Все' }));
+      expect(covers()).toEqual([finishedLow.title]);
+    });
+
+    it('labels the current and the finished books on their covers', async () => {
+      await renderApp({ loggedIn: false });
+
+      const cover = (title: string) => within(library().getByRole('img', { name: title }).parentElement!);
+
+      expect(cover(current.title).getByText('Читаем')).toBeInTheDocument();
+      expect(cover(finishedHigh.title).getByText('Прочитана · 9')).toBeInTheDocument();
+      expect(cover(finishedLow.title).getByText('Прочитана · 7.5')).toBeInTheDocument();
+      expect(cover(newAnna.title).queryByText(/Читаем|Прочитана/)).not.toBeInTheDocument();
+    });
+  });
+
+  describe('finished books', () => {
+    const finished = (n: number): Book[] => Array.from({ length: n }, (_, i) => ({
+      ...finishedHigh, id: `fx${i}`, title: `Книга ${i + 1}`, rating: 10 - i / 2,
+    }));
+    const shownTitles = () => within(document.getElementById('finished-books')!).getAllByRole('heading', { level: 4 });
+
+    it('shows ten, then ten more per «Показать ещё»', async () => {
+      server.use(http.get('/api/books', () => HttpResponse.json([current, finishedHigh, ...finished(11)])));
+      const user = await renderApp({ loggedIn: false });
+
+      expect(shownTitles()).toHaveLength(10);
+      await user.click(screen.getByRole('button', { name: 'Показать ещё' }));
+
+      expect(shownTitles()).toHaveLength(12);
+      expect(screen.queryByRole('button', { name: 'Показать ещё' })).not.toBeInTheDocument();
+    });
+
+    it('has no «Показать ещё» for ten or fewer', async () => {
+      await renderApp({ loggedIn: false });
+
+      expect(screen.queryByRole('button', { name: 'Показать ещё' })).not.toBeInTheDocument();
+    });
+  });
+
+  describe('long descriptions', () => {
+    afterEach(() => vi.restoreAllMocks());
+
+    it('offers «Читать дальше» only for a description that is cut off', async () => {
+      await renderApp({ loggedIn: false });
+
+      // jsdom has no layout: every element measures 0, so nothing is cut off.
+      expect(screen.queryByRole('button', { name: 'Читать дальше' })).not.toBeInTheDocument();
+    });
+
+    it('expands and collapses a cut-off description', async () => {
+      vi.spyOn(HTMLElement.prototype, 'scrollHeight', 'get').mockReturnValue(400);
+      vi.spyOn(HTMLElement.prototype, 'clientHeight', 'get').mockReturnValue(100);
+      const user = await renderApp({ loggedIn: false });
+      const section = within(document.getElementById('in-progress')!);
+
+      await user.click(section.getByRole('button', { name: 'Читать дальше' }));
+      expect(section.getByRole('button', { name: 'Свернуть' })).toHaveAttribute('aria-expanded', 'true');
+
+      await user.click(section.getByRole('button', { name: 'Свернуть' }));
+      expect(section.getByRole('button', { name: 'Читать дальше' })).toHaveAttribute('aria-expanded', 'false');
+    });
+  });
+
+  describe('back to top', () => {
+    afterEach(() => {
+      Object.defineProperty(window, 'pageYOffset', { value: 0, configurable: true });
+      vi.restoreAllMocks();
+    });
+
+    it('shows after scrolling down and scrolls back up', async () => {
+      const scrollTo = vi.spyOn(window, 'scrollTo').mockImplementation(() => {});
+      const user = await renderApp({ loggedIn: false });
+      expect(screen.queryByRole('button', { name: 'Наверх' })).not.toBeInTheDocument();
+
+      Object.defineProperty(window, 'pageYOffset', { value: 1000, configurable: true });
+      fireEvent.scroll(window);
+      await user.click(await screen.findByRole('button', { name: 'Наверх' }));
+
+      expect(scrollTo).toHaveBeenCalledWith({ top: 0, behavior: 'smooth' });
+    });
+  });
+
+  it('loads the statistics dialog when it is opened', async () => {
+    const user = await renderApp({ loggedIn: false });
+
+    await user.click(screen.getAllByRole('button', { name: 'Статистика' })[0]);
+
+    expect(await screen.findByRole('dialog', { name: /Статистика/ })).toBeInTheDocument();
+    expect(screen.getByTestId('chart')).toBeInTheDocument();
+  });
+});

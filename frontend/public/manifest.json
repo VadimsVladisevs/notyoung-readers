@@ -1,0 +1,9 @@
+{
+  "short_name": "НЕЮНЫЙ ЧИТАТЕЛЬ",
+  "name": "Клуб \"НЕЮНЫЙ ЧИТАТЕЛЬ\"",
+  "icons": [],
+  "start_url": ".",
+  "display": "standalone",
+  "theme_color": "#212529",
+  "background_color": "#ffffff"
+}

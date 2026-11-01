@@ -1,0 +1,19 @@
+# Local dev MongoDB. Start: docker compose up -d · stop: docker compose stop
+name: readersclub   # fixed, so the data volume is the same whatever the clone folder is called
+
+services:
+  mongo:
+    image: mongo:8.0
+    ports:
+      - "127.0.0.1:27017:27017"
+    volumes:
+      - mongo-data:/data/db
+    restart: "no"
+    healthcheck:
+      test: ["CMD", "mongosh", "--quiet", "--eval", "db.adminCommand('ping')"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  mongo-data:

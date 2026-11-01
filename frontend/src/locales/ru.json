@@ -1,0 +1,143 @@
+{
+  "app": {
+    "title": "Клуб \"НЕЮНЫЙ ЧИТАТЕЛЬ\""
+  },
+  "nav": {
+    "library": "Библиотека",
+    "currentBook": "Выбранная книга",
+    "finishedBooks": "Прочитанные книжки",
+    "bookSelection": "Выбор книги",
+    "addBook": "Добавить книгу",
+    "statistics": "Статистика",
+    "login": "Войти",
+    "logout": "Выйти",
+    "account": "Аккаунт",
+    "accountOf": "Аккаунт {name}",
+    "editMode": "Режим редактирования"
+  },
+  "sections": {
+    "library": {
+      "title": "Библиотека клуба",
+      "prev": "Назад",
+      "next": "Вперёд",
+      "searchLabel": "Поиск по названию, автору или участнику",
+      "statusFilter": "Статус книг",
+      "filterAll": "Все",
+      "filterNew": "В списке",
+      "filterProgress": "Читаем",
+      "filterFinished": "Прочитаны",
+      "notFound": "Ничего не найдено",
+      "statusProgress": "Читаем",
+      "statusFinished": "Прочитана",
+      "statusFinishedRating": "Прочитана · {rating}"
+    },
+    "currentBook": {
+      "title": "Выбранная книжка",
+      "noBook": "Книга ещё не выбрана",
+      "tag": "Тег",
+      "finishButton": "Закончить",
+      "wikiButton": "Википедия",
+      "selectButton": "Выбрать книгу"
+    },
+    "finishedBooks": {
+      "title": "Прочитанные книжки",
+      "showMore": "Показать ещё"
+    },
+    "readMore": "Читать дальше",
+    "readLess": "Свернуть",
+    "backToTop": "Наверх"
+  },
+  "dialogs": {
+    "bookSelection": {
+      "title": "Добавьте книжку в список",
+      "searchPlaceholder": "Поиск книги..",
+      "noBooks": "Нет доступных книг",
+      "randomButton": "Случайный выбор",
+      "confirmSelectedButton": "Подтвердить",
+      "selectBookButton": "Выбрать",
+      "closeButton": "Отмена",
+      "confirmMessage": "Вы хотите выбрать книгу \"{title}\"?",
+      "noSelectedError": "Добавьте книжки для выбора",
+      "searchFilters": {
+        "tag": "Участник",
+        "title": "Название",
+        "author": "Автор"
+      }
+    },
+    "randomBook": {
+      "title": "Случайная книга",
+      "anotherButton": "Другая книга",
+      "selectButton": "Выбрать эту книгу"
+    },
+    "approval": {
+      "title": "Подтверждение выбора",
+      "ratingLabel": "Оценка для",
+      "ratingRequired": "Введите оценку от 1 до 10",
+      "saveFailed": "Не удалось сохранить. Попробуйте ещё раз.",
+      "sessionExpired": "Сессия истекла. Войдите снова.",
+      "cancelButton": "Отмена",
+      "confirmButton": "Подтвердить"
+    },
+    "addBook": {
+      "title": "Новая книга",
+      "titleLabel": "Название",
+      "authorLabel": "Автор",
+      "tagLabel": "Участник",
+      "wikiLabel": "Описание",
+      "required": "Заполните все поля",
+      "saveFailed": "Не удалось сохранить. Попробуйте ещё раз.",
+      "sessionExpired": "Сессия истекла. Войдите снова.",
+      "cancelButton": "Отмена",
+      "submitButton": "Добавить"
+    },
+    "editBook": {
+      "title": "Редактировать книгу",
+      "openButton": "Изменить «{title}»",
+      "statusLabel": "Статус",
+      "statusNew": "В списке",
+      "statusProgress": "Читаем сейчас",
+      "statusFinished": "Прочитана",
+      "ratingLabel": "Оценка",
+      "ratingRequired": "Введите оценку от 1 до 10",
+      "inProgressConflict": "Уже есть текущая книга. Сначала смените её статус.",
+      "deleteButton": "Удалить",
+      "deleteConfirm": "Удалить книгу насовсем?",
+      "deleteYes": "Да, удалить",
+      "deleteNo": "Нет",
+      "submitButton": "Сохранить"
+    },
+    "login": {
+      "title": "Вход",
+      "usernameLabel": "Логин",
+      "passwordLabel": "Пароль",
+      "required": "Введите логин и пароль",
+      "wrongCredentials": "Неверный логин или пароль",
+      "failed": "Не удалось войти. Попробуйте ещё раз.",
+      "cancelButton": "Отмена",
+      "submitButton": "Войти"
+    },
+    "statistics": {
+      "title": "Статистика",
+      "totalBooks": "Всего книг",
+      "rating": "Оценка",
+      "averageRating": "Средняя оценка",
+      "modeCount": "Количество",
+      "modeRating": "Рейтинг",
+      "closeButton": "Закрыть"
+    },
+    "cover": {
+      "label": "Обложка",
+      "dropHint": "Перетащите сюда обложку (JPEG, до 2 МБ) или нажмите, чтобы выбрать файл",
+      "inputLabel": "Файл обложки",
+      "previewAlt": "Обложка",
+      "remove": "Убрать выбранный файл",
+      "wrongType": "Нужен файл JPEG",
+      "tooLarge": "Файл больше 2 МБ",
+      "uploadFailedAdd": "Книга добавлена, но обложку загрузить не удалось. Добавьте её через редактирование.",
+      "uploadFailedEdit": "Изменения сохранены, но обложку загрузить не удалось. Попробуйте ещё раз."
+    }
+  },
+  "footer": {
+    "copyright": "Reader's club"
+  }
+}
