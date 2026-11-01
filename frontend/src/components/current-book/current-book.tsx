@@ -19,7 +19,7 @@ const CurrentBook: React.FC<CurrentBookProps> = ({ book, onSelectClick, onEdit }
   return (
     <Box id={CURRENT_BOOK_CONSTANTS.SECTION_ID} sx={styles.containerStyles}>
       <Container maxWidth="lg">
-        <Typography variant="h2" component="h2" sx={styles.titleStyles}>
+        <Typography variant="h2" component="h1" sx={styles.titleStyles}>
           {t('sections.currentBook.title')}
         </Typography>
 

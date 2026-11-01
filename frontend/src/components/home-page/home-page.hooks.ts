@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { useBooksContext } from '../../context/books-context';
 import { useAuthContext } from '../../context/auth-context';
 import { Book, BookDto, CreateBookDto } from '../../types';
@@ -32,6 +32,16 @@ export const useHomePage = () => {
   const [loginDialogOpen, setLoginDialogOpen] = useState(false);
   const [addBookDialogOpen, setAddBookDialogOpen] = useState(false);
   const [editingBook, setEditingBook] = useState<Book | null>(null);
+  const [editMode, setEditMode] = useState(false);
+
+  // Edit mode starts off after every login, including one after an expired session.
+  useEffect(() => {
+    if (!isAdmin) setEditMode(false);
+  }, [isAdmin]);
+
+  const handleToggleEditMode = useCallback(() => {
+    setEditMode((prev) => !prev);
+  }, []);
 
   const handleOpenSelectionDialog = useCallback(() => {
     setSelectionDialogOpen(true);
@@ -180,8 +190,12 @@ export const useHomePage = () => {
     currentBook,
     finishedBooks,
     loading,
-    loggedIn: user !== null,
+    username: user?.username ?? null,
     canSelectBook: isAdmin,
+    /** The pencils and «Добавить книгу» show: the admin turned edit mode on. */
+    editing: isAdmin && editMode,
+    editMode,
+    handleToggleEditMode,
     selectionDialogOpen,
     statisticsDialogOpen,
     approvalDialogOpen,

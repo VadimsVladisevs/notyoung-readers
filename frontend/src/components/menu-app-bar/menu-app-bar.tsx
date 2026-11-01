@@ -13,8 +13,12 @@ import {
   ListItemButton,
   ListItemText,
   Divider,
+  Menu,
+  MenuItem,
+  Switch,
 } from '@mui/material';
 import MenuIcon from '@mui/icons-material/Menu';
+import AccountCircleIcon from '@mui/icons-material/AccountCircle';
 import AutoStoriesOutlinedIcon from '@mui/icons-material/AutoStoriesOutlined';
 import FacebookIcon from '@mui/icons-material/Facebook';
 import ImageIcon from '@mui/icons-material/Image';
@@ -29,7 +33,11 @@ export interface MenuAppBarProps {
   /** Omitted when the user may not add books: the menu item is hidden. */
   onOpenAddBook?: () => void;
   onOpenStatistics: () => void;
-  loggedIn: boolean;
+  /** `null` = logged out. */
+  username: string | null;
+  editMode: boolean;
+  /** Omitted when the user may not edit books: the edit-mode switch is hidden. */
+  onToggleEditMode?: () => void;
   onLogin: () => void;
   onLogout: () => void;
 }
@@ -38,15 +46,25 @@ const MenuAppBar: React.FC<MenuAppBarProps> = ({
   onOpenBookSelection,
   onOpenAddBook,
   onOpenStatistics,
-  loggedIn,
+  username,
+  editMode,
+  onToggleEditMode,
   onLogin,
   onLogout,
 }) => {
-  const { mobileOpen, handleDrawerToggle, handleNavClick, openExternalLink } = useMenuAppBar();
+  const {
+    mobileOpen,
+    handleDrawerToggle,
+    handleNavClick,
+    openExternalLink,
+    accountAnchor,
+    handleOpenAccountMenu,
+    handleCloseAccountMenu,
+  } = useMenuAppBar();
 
   const navItems = [
-    { label: t('nav.library'), href: MENU_APP_BAR_CONSTANTS.NAV_ANCHORS.LIBRARY },
     { label: t('nav.currentBook'), href: MENU_APP_BAR_CONSTANTS.NAV_ANCHORS.CURRENT_BOOK },
+    { label: t('nav.library'), href: MENU_APP_BAR_CONSTANTS.NAV_ANCHORS.LIBRARY },
     { label: t('nav.finishedBooks'), href: MENU_APP_BAR_CONSTANTS.NAV_ANCHORS.FINISHED_BOOKS },
   ];
 
@@ -84,11 +102,6 @@ const MenuAppBar: React.FC<MenuAppBarProps> = ({
         <ListItem disablePadding>
           <ListItemButton sx={styles.listItemButtonStyles} onClick={onOpenStatistics}>
             <ListItemText primary={t('nav.statistics')} />
-          </ListItemButton>
-        </ListItem>
-        <ListItem disablePadding>
-          <ListItemButton sx={styles.listItemButtonStyles} onClick={loggedIn ? onLogout : onLogin}>
-            <ListItemText primary={t(loggedIn ? 'nav.logout' : 'nav.login')} />
           </ListItemButton>
         </ListItem>
       </List>
@@ -164,12 +177,6 @@ const MenuAppBar: React.FC<MenuAppBarProps> = ({
               >
                 {t('nav.statistics')}
               </Button>
-              <Button
-                onClick={loggedIn ? onLogout : onLogin}
-                sx={styles.navButtonStyles}
-              >
-                {t(loggedIn ? 'nav.logout' : 'nav.login')}
-              </Button>
               <IconButton
                 color="inherit"
                 onClick={() => openExternalLink(MENU_APP_BAR_CONSTANTS.SOCIAL_LINKS.DISCORD)}
@@ -192,6 +199,49 @@ const MenuAppBar: React.FC<MenuAppBarProps> = ({
                 <ImageIcon />
               </IconButton>
             </Box>
+
+            <IconButton
+              size="large"
+              color="inherit"
+              aria-label={username ? t('nav.accountOf', { name: username }) : t('nav.account')}
+              aria-controls={accountAnchor ? 'account-menu' : undefined}
+              aria-haspopup="true"
+              onClick={handleOpenAccountMenu}
+              sx={styles.accountButtonStyles}
+            >
+              <AccountCircleIcon />
+            </IconButton>
+            <Menu
+              id="account-menu"
+              anchorEl={accountAnchor}
+              open={accountAnchor !== null}
+              onClose={handleCloseAccountMenu}
+              anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
+              transformOrigin={{ vertical: 'top', horizontal: 'right' }}
+            >
+              {username === null ? (
+                <MenuItem onClick={() => { handleCloseAccountMenu(); onLogin(); }}>
+                  {t('nav.login')}
+                </MenuItem>
+              ) : [
+                <MenuItem key="user" disabled>{username}</MenuItem>,
+                onToggleEditMode && (
+                  <MenuItem
+                    key="edit-mode"
+                    role="menuitemcheckbox"
+                    aria-checked={editMode}
+                    onClick={onToggleEditMode}
+                  >
+                    <Box component="span" sx={styles.editModeLabelStyles}>{t('nav.editMode')}</Box>
+                    <Switch edge="end" size="small" checked={editMode} tabIndex={-1} slotProps={{ input: { 'aria-hidden': true } }} />
+                  </MenuItem>
+                ),
+                <Divider key="divider" />,
+                <MenuItem key="logout" onClick={() => { handleCloseAccountMenu(); onLogout(); }}>
+                  {t('nav.logout')}
+                </MenuItem>,
+              ]}
+            </Menu>
           </Toolbar>
         </Container>
       </AppBar>

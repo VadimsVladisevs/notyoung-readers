@@ -84,9 +84,27 @@ const renderApp = async ({ loggedIn = true, account = ADMIN } = {}) => {
   render(<App />);
   // The finished list shows once the books are loaded.
   await screen.findAllByText(finishedHigh.title, { exact: false });
-  // The auth state is known once the login or logout button shows.
-  await screen.findAllByRole('button', { name: loggedIn ? 'Выйти' : 'Войти' });
+  // The auth state is known once the account button names the user (or no one).
+  await screen.findByRole('button', { name: loggedIn ? `Аккаунт ${account.username}` : 'Аккаунт' });
   return user;
+};
+
+const openAccountMenu = async (user: ReturnType<typeof userEvent.setup>) => {
+  await user.click(screen.getByRole('button', { name: /^Аккаунт/ }));
+  return screen.findByRole('menu');
+};
+
+const clickMenuItem = async (user: ReturnType<typeof userEvent.setup>, name: string) => {
+  const menu = await openAccountMenu(user);
+  await user.click(within(menu).getByRole('menuitem', { name }));
+};
+
+/** Flips the admin's edit mode in the account menu, then closes the menu. */
+const toggleEditMode = async (user: ReturnType<typeof userEvent.setup>) => {
+  const menu = await openAccountMenu(user);
+  await user.click(within(menu).getByRole('menuitemcheckbox', { name: 'Режим редактирования' }));
+  await user.keyboard('{Escape}');
+  await waitFor(() => expect(screen.queryByRole('menu')).not.toBeInTheDocument());
 };
 
 const openSelectionDialog = async (user: ReturnType<typeof userEvent.setup>) => {
@@ -110,11 +128,55 @@ describe('App', () => {
     expect(screen.getAllByText(current.title, { exact: false }).length).toBeGreaterThan(0);
   });
 
+  it('shows the current book first, then the library, then the finished books', async () => {
+    await renderApp({ loggedIn: false });
+
+    expect(screen.getAllByRole('heading', { level: 1 }).map((h) => h.textContent)).toEqual(['Выбранная книжка']);
+    const sections = screen.getAllByRole('heading', { level: 2 })
+      .map((h) => h.textContent)
+      .filter((text) => ['Библиотека клуба', 'Прочитанные книжки'].includes(text ?? ''));
+    expect(sections).toEqual(['Библиотека клуба', 'Прочитанные книжки']);
+  });
+
   describe('login', () => {
     const openLoginDialog = async (user: ReturnType<typeof userEvent.setup>) => {
-      await user.click(screen.getAllByRole('button', { name: 'Войти' })[0]);
+      await clickMenuItem(user, 'Войти');
       return screen.findByRole('dialog', { name: /Вход/ });
     };
+
+    const logIn = async (user: ReturnType<typeof userEvent.setup>) => {
+      const dialog = await openLoginDialog(user);
+      await user.type(within(dialog).getByLabelText('Логин'), ADMIN.username);
+      await user.type(within(dialog).getByLabelText('Пароль'), PASSWORD);
+      await user.click(within(dialog).getByRole('button', { name: 'Войти' }));
+      await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
+    };
+
+    it('offers only «Войти» in the account menu while logged out', async () => {
+      const user = await renderApp({ loggedIn: false });
+      const menu = await openAccountMenu(user);
+
+      expect(within(menu).getAllByRole('menuitem').map((item) => item.textContent)).toEqual(['Войти']);
+      expect(within(menu).queryByRole('menuitemcheckbox')).not.toBeInTheDocument();
+    });
+
+    it('shows the user, the edit-mode switch and «Выйти» for the admin', async () => {
+      const user = await renderApp();
+      const menu = await openAccountMenu(user);
+
+      expect(within(menu).getByText(ADMIN.username)).toBeInTheDocument();
+      expect(within(menu).getByRole('menuitemcheckbox', { name: 'Режим редактирования' }))
+        .toHaveAttribute('aria-checked', 'false');
+      expect(within(menu).getByRole('menuitem', { name: 'Выйти' })).toBeInTheDocument();
+    });
+
+    it('has no edit-mode switch for a user without the ADMIN role', async () => {
+      const user = await renderApp({ account: { username: 'reader', roles: [] } });
+      const menu = await openAccountMenu(user);
+
+      expect(within(menu).queryByRole('menuitemcheckbox')).not.toBeInTheDocument();
+      expect(within(menu).getByRole('menuitem', { name: 'Выйти' })).toBeInTheDocument();
+    });
 
     it('hides book selection while logged out', async () => {
       await renderApp({ loggedIn: false });
@@ -133,7 +195,7 @@ describe('App', () => {
 
       await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
       expect(screen.getAllByRole('button', { name: 'Выбор книги' }).length).toBeGreaterThan(0);
-      expect(screen.getAllByRole('button', { name: 'Выйти' }).length).toBeGreaterThan(0);
+      expect(screen.getByRole('button', { name: `Аккаунт ${ADMIN.username}` })).toBeInTheDocument();
     });
 
     it('shows an error on a wrong password and stays logged out', async () => {
@@ -166,10 +228,23 @@ describe('App', () => {
     it('logs out and hides book selection', async () => {
       const user = await renderApp();
 
-      await user.click(screen.getAllByRole('button', { name: 'Выйти' })[0]);
+      await clickMenuItem(user, 'Выйти');
 
-      await screen.findAllByRole('button', { name: 'Войти' });
+      await screen.findByRole('button', { name: 'Аккаунт' });
       expect(screen.queryByRole('button', { name: 'Выбор книги' })).not.toBeInTheDocument();
+    });
+
+    it('starts the next login with edit mode off', async () => {
+      const user = await renderApp();
+      await toggleEditMode(user);
+      expect(screen.getAllByRole('button', { name: 'Добавить книгу' }).length).toBeGreaterThan(0);
+
+      await clickMenuItem(user, 'Выйти');
+      await screen.findByRole('button', { name: 'Аккаунт' });
+      await logIn(user);
+
+      expect(screen.queryByRole('button', { name: 'Добавить книгу' })).not.toBeInTheDocument();
+      expect(screen.queryAllByRole('button', { name: /^Изменить/ })).toHaveLength(0);
     });
 
     it('shows the select button for no current book only when logged in', async () => {
@@ -178,10 +253,7 @@ describe('App', () => {
 
       expect(screen.queryByRole('button', { name: 'Выбрать книгу' })).not.toBeInTheDocument();
 
-      const dialog = await openLoginDialog(user);
-      await user.type(within(dialog).getByLabelText('Логин'), ADMIN.username);
-      await user.type(within(dialog).getByLabelText('Пароль'), PASSWORD);
-      await user.click(within(dialog).getByRole('button', { name: 'Войти' }));
+      await logIn(user);
 
       expect(await screen.findByRole('button', { name: 'Выбрать книгу' })).toBeInTheDocument();
     });
@@ -340,6 +412,7 @@ describe('App', () => {
     };
 
     const openAddDialog = async (user: ReturnType<typeof userEvent.setup>) => {
+      await toggleEditMode(user);
       await user.click(screen.getAllByRole('button', { name: 'Добавить книгу' })[0]);
       return screen.findByRole('dialog', { name: /Новая книга/ });
     };
@@ -354,6 +427,19 @@ describe('App', () => {
     it('is hidden while logged out', async () => {
       await renderApp({ loggedIn: false });
 
+      expect(screen.queryByRole('button', { name: 'Добавить книгу' })).not.toBeInTheDocument();
+    });
+
+    it('shows only in edit mode for the admin', async () => {
+      const user = await renderApp();
+      expect(screen.queryByRole('button', { name: 'Добавить книгу' })).not.toBeInTheDocument();
+      // Book selection doesn't depend on edit mode.
+      expect(screen.getAllByRole('button', { name: 'Выбор книги' }).length).toBeGreaterThan(0);
+
+      await toggleEditMode(user);
+      expect(screen.getAllByRole('button', { name: 'Добавить книгу' }).length).toBeGreaterThan(0);
+
+      await toggleEditMode(user);
       expect(screen.queryByRole('button', { name: 'Добавить книгу' })).not.toBeInTheDocument();
     });
 
@@ -476,6 +562,7 @@ describe('App', () => {
     };
 
     const openEditDialog = async (user: ReturnType<typeof userEvent.setup>, title: string) => {
+      await toggleEditMode(user);
       await user.click(editButtons(title)[0]);
       return screen.findByRole('dialog', { name: /Редактировать книгу/ });
     };
@@ -497,8 +584,17 @@ describe('App', () => {
       expect(screen.queryAllByRole('button', { name: /^Изменить/ })).toHaveLength(0);
     });
 
-    it('shows a pencil on the library, current and finished books for the admin', async () => {
-      await renderApp();
+    it('hides the pencils until the admin turns edit mode on', async () => {
+      const user = await renderApp();
+      expect(screen.queryAllByRole('button', { name: /^Изменить/ })).toHaveLength(0);
+
+      await toggleEditMode(user);
+      expect(screen.queryAllByRole('button', { name: /^Изменить/ }).length).toBeGreaterThan(0);
+    });
+
+    it('shows a pencil on the library, current and finished books in edit mode', async () => {
+      const user = await renderApp();
+      await toggleEditMode(user);
 
       expect(editButtons(newAnna.title)).toHaveLength(1); // library
       expect(editButtons(current.title)).toHaveLength(2); // library + current book

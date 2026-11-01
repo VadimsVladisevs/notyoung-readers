@@ -3,59 +3,75 @@ import { SxProps, Theme } from '@mui/material';
 import { LIBRARY_SWIPER_CONSTANTS } from './library-swiper.constants';
 
 export const containerStyles: SxProps<Theme> = {
-  pt: 10,
-  pb: 1,
+  py: 4,
+  // Anchor scroll lands the heading below the fixed navbar (up to 93px tall on desktop).
+  scrollMarginTop: '48px',
 };
 
 export const titleStyles: SxProps<Theme> = {
   textAlign: 'center',
   fontWeight: 700,
-  fontSize: { xs: '2.5rem', md: '4rem' },
-  my: 4,
+  fontSize: { xs: '2rem', sm: '2.5rem', md: '4rem' },
+  my: { xs: 2, md: 4 },
 };
 
 export const swiperContainerStyles: SxProps<Theme> = {
-  position: 'relative',
   display: 'flex',
   alignItems: 'center',
-  gap: 2,
+  gap: 1,
+  '& .swiper-slide': {
+    width: LIBRARY_SWIPER_CONSTANTS.CARD_WIDTH,
+    height: 'auto',
+  },
 };
 
-export const slideContainerStyles: SxProps<Theme> = {
+export const cardStyles: SxProps<Theme> = {
   display: 'flex',
   flexDirection: 'column',
-  alignItems: 'center',
-  textAlign: 'center',
+  textAlign: 'left',
 };
 
-export const imageContainerStyles: SxProps<Theme> = {
-  width: LIBRARY_SWIPER_CONSTANTS.IMAGE_WIDTH,
-  height: LIBRARY_SWIPER_CONSTANTS.IMAGE_HEIGHT,
+export const coverContainerStyles: SxProps<Theme> = {
+  position: 'relative',
+  aspectRatio: '2 / 3',
+  borderRadius: 1,
   overflow: 'hidden',
-  margin: 'auto',
+  boxShadow: 2,
+  mb: 1,
+  transition: 'transform 0.2s, box-shadow 0.2s',
+  '@media (hover: hover)': {
+    '&:hover': {
+      transform: 'translateY(-4px)',
+      boxShadow: 6,
+    },
+  },
 };
 
-export const imageStyles: SxProps<Theme> = {
+export const coverStyles: SxProps<Theme> = {
+  display: 'block',
   width: '100%',
   height: '100%',
   objectFit: 'cover',
 };
 
-export const cardBodyStyles: SxProps<Theme> = {
-  p: 1,
-  borderTopStyle: 'solid',
-  borderTopWidth: 'thin',
-  borderTopColor: '#ddd',
-  width: LIBRARY_SWIPER_CONSTANTS.CARD_BODY_WIDTH,
-  height: LIBRARY_SWIPER_CONSTANTS.CARD_BODY_HEIGHT,
-  marginLeft: `${LIBRARY_SWIPER_CONSTANTS.CARD_BODY_MARGIN_LEFT}px`,
+export const editButtonStyles: SxProps<Theme> = {
+  position: 'absolute',
+  top: 6,
+  right: 6,
+  bgcolor: 'rgba(255, 255, 255, 0.9)',
+  boxShadow: 1,
+  '&:hover': {
+    bgcolor: 'white',
+  },
 };
 
 export const titleTextStyles: SxProps<Theme> = {
   fontWeight: 'bold',
+  lineHeight: 1.3,
+  display: '-webkit-box',
+  WebkitLineClamp: 2,
+  WebkitBoxOrient: 'vertical',
   overflow: 'hidden',
-  textOverflow: 'ellipsis',
-  whiteSpace: 'nowrap',
 };
 
 export const authorTextStyles: SxProps<Theme> = {
@@ -65,39 +81,23 @@ export const authorTextStyles: SxProps<Theme> = {
   display: 'block',
 };
 
-const navButtonBaseStyles: SxProps<Theme> = {
-  width: 40,
-  height: 40,
-  display: 'flex',
-  alignItems: 'center',
-  justifyContent: 'center',
-  cursor: 'pointer',
+export const navButtonStyles: SxProps<Theme> = {
+  display: { xs: 'none', md: 'inline-flex' },
   flexShrink: 0,
-  '&:hover': {
-    opacity: 0.7,
+  color: 'primary.main',
+  // Swiper adds these classes; keep MUI's display from overriding them.
+  '&.swiper-button-disabled': {
+    opacity: 0.3,
+    cursor: 'default',
   },
-};
-
-export const prevButtonStyles: SxProps<Theme> = {
-  ...navButtonBaseStyles,
-  '&::after': {
-    content: '"❮"',
-    fontSize: '24px',
-    color: '#212529',
-    fontWeight: 'bold',
-  },
-};
-
-export const nextButtonStyles: SxProps<Theme> = {
-  ...navButtonBaseStyles,
-  '&::after': {
-    content: '"❯"',
-    fontSize: '24px',
-    color: '#212529',
-    fontWeight: 'bold',
+  '&.swiper-button-lock': {
+    display: 'none',
   },
 };
 
 export const swiperStyles: React.CSSProperties = {
-  padding: '20px 0',
+  flex: 1,
+  // A flex child must be allowed to shrink, or the swiper widens the page (the 320px sideways scroll).
+  minWidth: 0,
+  padding: '8px 4px 16px',
 };

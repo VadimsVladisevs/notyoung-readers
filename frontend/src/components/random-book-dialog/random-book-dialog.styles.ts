@@ -18,7 +18,8 @@ export const contentContainerStyles: SxProps<Theme> = {
 
 export const imageContainerStyles: SxProps<Theme> = {
   width: RANDOM_BOOK_DIALOG_CONSTANTS.IMAGE_WIDTH,
-  height: RANDOM_BOOK_DIALOG_CONSTANTS.IMAGE_HEIGHT,
+  maxWidth: '100%',
+  aspectRatio: '2 / 3',
   overflow: 'hidden',
   mb: 3,
 };

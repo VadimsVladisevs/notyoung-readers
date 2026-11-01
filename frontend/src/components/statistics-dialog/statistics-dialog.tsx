@@ -19,6 +19,7 @@ import {
 } from 'chart.js';
 import { Book } from '../../types';
 import { t } from '../../i18n';
+import { useFullScreenDialog } from '../../utils/use-full-screen-dialog';
 import { useStatisticsDialog } from './statistics-dialog.hooks';
 import * as styles from './statistics-dialog.styles';
 
@@ -35,10 +36,11 @@ const StatisticsDialog: React.FC<StatisticsDialogProps> = ({
   onClose,
   books,
 }) => {
+  const fullScreen = useFullScreenDialog();
   const { chartData, chartOptions, toggleMode, modeButtonText } = useStatisticsDialog(books);
 
   return (
-    <Dialog open={open} onClose={onClose} maxWidth="lg" fullWidth>
+    <Dialog fullScreen={fullScreen} open={open} onClose={onClose} maxWidth="lg" fullWidth>
       <DialogTitle sx={styles.dialogTitleStyles}>
         <Button onClick={toggleMode} sx={styles.modeButtonStyles}>
           {modeButtonText}

@@ -10,8 +10,8 @@ export const containerStyles: SxProps<Theme> = {
 export const titleStyles: SxProps<Theme> = {
   textAlign: 'center',
   fontWeight: 700,
-  fontSize: { xs: '2.5rem', md: '4rem' },
-  my: 4,
+  fontSize: { xs: '2rem', sm: '2.5rem', md: '4rem' },
+  my: { xs: 2, md: 4 },
 };
 
 export const contentBoxStyles: SxProps<Theme> = {
@@ -24,7 +24,7 @@ export const contentBoxStyles: SxProps<Theme> = {
 
 export const imageContainerStyles: SxProps<Theme> = {
   width: CURRENT_BOOK_CONSTANTS.IMAGE_WIDTH,
-  height: CURRENT_BOOK_CONSTANTS.IMAGE_HEIGHT,
+  aspectRatio: '2 / 3',
   overflow: 'hidden',
   flexShrink: 0,
 };
@@ -44,6 +44,7 @@ export const textContainerStyles: SxProps<Theme> = {
 };
 
 export const bookTitleStyles: SxProps<Theme> = {
+  fontSize: { xs: '1.5rem', md: '2.125rem' },
   fontWeight: 300,
   lineHeight: 1,
   letterSpacing: '-0.05rem',
@@ -51,7 +52,7 @@ export const bookTitleStyles: SxProps<Theme> = {
 
 export const bookDescriptionStyles: SxProps<Theme> = {
   textAlign: 'left',
-  lineHeight: '2rem',
+  lineHeight: { xs: 1.7, md: '2rem' },
 };
 
 

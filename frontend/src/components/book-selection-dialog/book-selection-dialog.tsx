@@ -18,6 +18,7 @@ import SearchIcon from '@mui/icons-material/Search';
 import CloseIcon from '@mui/icons-material/Close';
 import { Book } from '../../types';
 import { t } from '../../i18n';
+import { useFullScreenDialog } from '../../utils/use-full-screen-dialog';
 import RandomBookDialog from '../random-book-dialog';
 import { useBookSelectionDialog } from './book-selection-dialog.hooks';
 import { SEARCH_FILTER_OPTIONS, SearchFilterOption } from './book-selection-dialog.constants';
@@ -39,6 +40,7 @@ const BookSelectionDialog: React.FC<BookSelectionDialogProps> = ({
   onSelectBook,
   onGetRandomBook,
 }) => {
+  const fullScreen = useFullScreenDialog();
   const [searchQuery, setSearchQuery] = useState('');
   const [searchFilter, setSearchFilter] = useState<SearchFilterOption>(SEARCH_FILTER_OPTIONS.TAG);
   
@@ -98,7 +100,7 @@ const BookSelectionDialog: React.FC<BookSelectionDialogProps> = ({
 
   return (
     <>
-      <Dialog open={open} onClose={handleClose} maxWidth="lg" fullWidth>
+      <Dialog fullScreen={fullScreen} open={open} onClose={handleClose} maxWidth="lg" fullWidth>
         <DialogTitle sx={styles.dialogTitleStyles}>
           {t('dialogs.bookSelection.title')}
           <IconButton onClick={handleClose} size="small">

@@ -15,6 +15,7 @@ import {
 } from '@mui/material';
 import CloseIcon from '@mui/icons-material/Close';
 import { t } from '../../i18n';
+import { useFullScreenDialog } from '../../utils/use-full-screen-dialog';
 import { Book, BookDto, BookStatus } from '../../types';
 import CoverDropZone from '../cover-drop-zone';
 import { coverSrc } from '../../utils/cover';
@@ -43,13 +44,14 @@ export interface EditBookDialogProps {
 }
 
 const EditBookDialog: React.FC<EditBookDialogProps> = ({ book, onClose, onSubmit, onDelete, tags }) => {
+  const fullScreen = useFullScreenDialog();
   const {
     values, missing, error, loading, confirmingDelete, setConfirmingDelete, cover, setCover, setField, handleSubmit,
     handleDelete,
   } = useEditBookDialog(book, onSubmit, onDelete);
 
   return (
-    <Dialog open={book !== null} onClose={onClose} maxWidth="sm" fullWidth>
+    <Dialog fullScreen={fullScreen} open={book !== null} onClose={onClose} maxWidth="sm" fullWidth>
       {values && (
         <Box component="form" onSubmit={handleSubmit} noValidate>
           <DialogTitle sx={styles.dialogTitleStyles}>

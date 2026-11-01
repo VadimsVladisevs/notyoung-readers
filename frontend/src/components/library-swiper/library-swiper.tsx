@@ -1,14 +1,16 @@
-import React, { useState, useEffect } from 'react';
-import { Box, Typography, Container } from '@mui/material';
+import React from 'react';
+import { Box, Typography, Container, IconButton } from '@mui/material';
+import ChevronLeftIcon from '@mui/icons-material/ChevronLeft';
+import ChevronRightIcon from '@mui/icons-material/ChevronRight';
 import { Swiper, SwiperSlide } from 'swiper/react';
-import { Navigation } from 'swiper/modules';
-import type { Swiper as SwiperType } from 'swiper';
+import { FreeMode, Keyboard, Navigation } from 'swiper/modules';
 import { Book } from '../../types';
 import { t } from '../../i18n';
 import { LIBRARY_SWIPER_CONSTANTS } from './library-swiper.constants';
 import * as styles from './library-swiper.styles';
 
 import 'swiper/css';
+import 'swiper/css/free-mode';
 import 'swiper/css/navigation';
 import { coverSrc } from '../../utils/cover';
 import EditBookButton from '../edit-book-button';
@@ -19,81 +21,69 @@ export interface LibrarySwiperProps {
   onEdit?: (book: Book) => void;
 }
 
-const getDirection = (): 'horizontal' | 'vertical' => {
-  return window.innerWidth <= LIBRARY_SWIPER_CONSTANTS.BREAKPOINTS.MOBILE ? 'vertical' : 'horizontal';
-};
-
 const LibrarySwiper: React.FC<LibrarySwiperProps> = ({ books, onEdit }) => {
-  const [swiperInstance, setSwiperInstance] = useState<SwiperType | null>(null);
-  const [direction, setDirection] = useState<'horizontal' | 'vertical'>(getDirection());
-
-  useEffect(() => {
-    const handleResize = () => {
-      const newDirection = getDirection();
-      setDirection(newDirection);
-      if (swiperInstance) {
-        swiperInstance.changeDirection(newDirection);
-      }
-    };
-
-    window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
-  }, [swiperInstance]);
-
   return (
     <Box id={LIBRARY_SWIPER_CONSTANTS.SECTION_ID} sx={styles.containerStyles}>
       <Container maxWidth="lg">
-        <Typography variant="h2" component="h1" sx={styles.titleStyles}>
+        <Typography variant="h2" component="h2" sx={styles.titleStyles}>
           {t('sections.library.title')}
         </Typography>
 
         <Box sx={styles.swiperContainerStyles}>
-          <Box className="swiper-button-prev-custom" sx={styles.prevButtonStyles} />
+          <IconButton
+            className={LIBRARY_SWIPER_CONSTANTS.PREV_CLASS}
+            aria-label={t('sections.library.prev')}
+            sx={styles.navButtonStyles}
+          >
+            <ChevronLeftIcon fontSize="large" />
+          </IconButton>
           <Swiper
-            modules={[Navigation]}
-            spaceBetween={LIBRARY_SWIPER_CONSTANTS.SPACE_BETWEEN}
-            slidesPerView={LIBRARY_SWIPER_CONSTANTS.SLIDES_PER_VIEW}
-            navigation={{
-              nextEl: '.swiper-button-next-custom',
-              prevEl: '.swiper-button-prev-custom',
-            }}
-            loop={true}
-            direction={direction}
-            onSwiper={setSwiperInstance}
+            modules={[FreeMode, Keyboard, Navigation]}
+            slidesPerView="auto"
+            spaceBetween={LIBRARY_SWIPER_CONSTANTS.SPACE_BETWEEN.MOBILE}
             breakpoints={{
-              0: { slidesPerView: 1 },
-              480: { slidesPerView: 2 },
-              768: { slidesPerView: 3 },
-              1024: { slidesPerView: 4 },
-              1280: { slidesPerView: 5 },
+              [LIBRARY_SWIPER_CONSTANTS.DESKTOP_FROM]: { spaceBetween: LIBRARY_SWIPER_CONSTANTS.SPACE_BETWEEN.DESKTOP },
             }}
+            freeMode={{ enabled: true, sticky: false }}
+            keyboard={{ enabled: true }}
+            navigation={{
+              prevEl: `.${LIBRARY_SWIPER_CONSTANTS.PREV_CLASS}`,
+              nextEl: `.${LIBRARY_SWIPER_CONSTANTS.NEXT_CLASS}`,
+            }}
+            // Loop needs more slides than fit on screen, or it jumps.
+            loop={books.length > LIBRARY_SWIPER_CONSTANTS.MIN_SLIDES_FOR_LOOP}
             style={styles.swiperStyles}
           >
             {books.map((book) => (
               <SwiperSlide key={book.id}>
-                <Box sx={styles.slideContainerStyles}>
-                  <Box sx={styles.imageContainerStyles}>
+                <Box sx={styles.cardStyles}>
+                  <Box sx={styles.coverContainerStyles}>
                     <Box
                       component="img"
                       src={coverSrc(book)}
                       alt={book.title}
-                      sx={styles.imageStyles}
+                      loading="lazy"
+                      sx={styles.coverStyles}
                     />
+                    {onEdit && <EditBookButton book={book} onEdit={onEdit} sx={styles.editButtonStyles} />}
                   </Box>
-                  <Box sx={styles.cardBodyStyles}>
-                    <Typography variant="subtitle2" sx={styles.titleTextStyles}>
-                      {book.title}
-                    </Typography>
-                    <Typography variant="caption" color="text.secondary" sx={styles.authorTextStyles}>
-                      {book.author}
-                    </Typography>
-                    {onEdit && <EditBookButton book={book} onEdit={onEdit} />}
-                  </Box>
+                  <Typography variant="subtitle2" sx={styles.titleTextStyles}>
+                    {book.title}
+                  </Typography>
+                  <Typography variant="caption" color="text.secondary" sx={styles.authorTextStyles}>
+                    {book.author}
+                  </Typography>
                 </Box>
               </SwiperSlide>
             ))}
           </Swiper>
-          <Box className="swiper-button-next-custom" sx={styles.nextButtonStyles} />
+          <IconButton
+            className={LIBRARY_SWIPER_CONSTANTS.NEXT_CLASS}
+            aria-label={t('sections.library.next')}
+            sx={styles.navButtonStyles}
+          >
+            <ChevronRightIcon fontSize="large" />
+          </IconButton>
         </Box>
       </Container>
     </Box>

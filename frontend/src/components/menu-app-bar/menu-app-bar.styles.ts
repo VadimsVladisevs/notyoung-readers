@@ -102,3 +102,13 @@ export const listItemButtonStyles: SxProps<Theme> = {
 export const drawerContainerStyles: SxProps<Theme> = {
   textAlign: 'center',
 };
+
+export const accountButtonStyles: SxProps<Theme> = {
+  ml: 1,
+  flexShrink: 0,
+};
+
+export const editModeLabelStyles: SxProps<Theme> = {
+  flexGrow: 1,
+  mr: 2,
+};

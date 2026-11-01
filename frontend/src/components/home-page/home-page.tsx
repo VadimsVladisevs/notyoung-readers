@@ -21,8 +21,11 @@ const HomePage: React.FC = () => {
     currentBook,
     finishedBooks,
     loading,
-    loggedIn,
+    username,
     canSelectBook,
+    editing,
+    editMode,
+    handleToggleEditMode,
     selectionDialogOpen,
     statisticsDialogOpen,
     approvalDialogOpen,
@@ -61,27 +64,29 @@ const HomePage: React.FC = () => {
       </Backdrop>
       <MenuAppBar 
         onOpenBookSelection={canSelectBook ? handleOpenSelectionDialog : undefined}
-        onOpenAddBook={canSelectBook ? handleOpenAddBookDialog : undefined}
+        onOpenAddBook={editing ? handleOpenAddBookDialog : undefined}
         onOpenStatistics={handleOpenStatistics}
-        loggedIn={loggedIn}
+        username={username}
+        editMode={editMode}
+        onToggleEditMode={canSelectBook ? handleToggleEditMode : undefined}
         onLogin={handleOpenLoginDialog}
         onLogout={handleLogout}
       />
       
       <Box sx={styles.contentBoxStyles}>
-        <LibrarySwiper books={allBooks} onEdit={canSelectBook ? handleOpenEditBook : undefined} />
-        
-        <Divider sx={styles.dividerStyles} />
-        
         <CurrentBook
           book={currentBook}
           onSelectClick={canSelectBook ? handleOpenSelectionDialog : undefined}
-          onEdit={canSelectBook ? handleOpenEditBook : undefined}
+          onEdit={editing ? handleOpenEditBook : undefined}
         />
         
         <Divider sx={styles.dividerStyles} />
         
-        <FinishedBooks books={finishedBooks} onEdit={canSelectBook ? handleOpenEditBook : undefined} />
+        <LibrarySwiper books={allBooks} onEdit={editing ? handleOpenEditBook : undefined} />
+        
+        <Divider sx={styles.dividerStyles} />
+        
+        <FinishedBooks books={finishedBooks} onEdit={editing ? handleOpenEditBook : undefined} />
       </Box>
 
       <Footer />

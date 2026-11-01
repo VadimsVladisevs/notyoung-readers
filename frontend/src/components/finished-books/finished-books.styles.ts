@@ -9,12 +9,12 @@ export const containerStyles: SxProps<Theme> = {
 export const titleStyles: SxProps<Theme> = {
   textAlign: 'center',
   fontWeight: 700,
-  fontSize: { xs: '2.5rem', md: '4rem' },
-  my: 4,
+  fontSize: { xs: '2rem', sm: '2.5rem', md: '4rem' },
+  my: { xs: 2, md: 4 },
 };
 
 export const dividerStyles: SxProps<Theme> = {
-  my: '5rem',
+  my: { xs: '2.5rem', md: '5rem' },
 };
 
 export const featuretteRowStyles: SxProps<Theme> = {
@@ -38,9 +38,11 @@ export const textColumnStyles: SxProps<Theme> = {
 
 export const imageColumnStyles: SxProps<Theme> = {
   flexShrink: 0,
+  width: { xs: '60%', sm: 200, md: 250 },
 };
 
 export const featuretteHeadingStyles: SxProps<Theme> = {
+  fontSize: { xs: '1.5rem', md: '2.125rem' },
   fontWeight: 300,
   lineHeight: 1,
   letterSpacing: '-0.05rem',
@@ -49,7 +51,7 @@ export const featuretteHeadingStyles: SxProps<Theme> = {
 
 export const featuretteDescStyles: SxProps<Theme> = {
   textAlign: 'left',
-  lineHeight: '2rem',
+  lineHeight: { xs: 1.7, md: '2rem' },
   mb: 2,
 };
 
@@ -58,8 +60,9 @@ export const ratingTextStyles: SxProps<Theme> = {
 };
 
 export const featuretteImageStyles: SxProps<Theme> = {
-  width: { xs: 200, md: 250 },
-  height: { xs: 300, md: 375 },
+  display: 'block',
+  width: '100%',
+  aspectRatio: '2 / 3',
   objectFit: 'cover',
 };
 

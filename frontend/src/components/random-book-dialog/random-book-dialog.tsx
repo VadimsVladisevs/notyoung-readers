@@ -12,6 +12,7 @@ import {
 import CloseIcon from '@mui/icons-material/Close';
 import { Book } from '../../types';
 import { t } from '../../i18n';
+import { useFullScreenDialog } from '../../utils/use-full-screen-dialog';
 import * as styles from './random-book-dialog.styles';
 import { coverSrc } from '../../utils/cover';
 
@@ -30,10 +31,11 @@ const RandomBookDialog: React.FC<RandomBookDialogProps> = ({
   onSelectBook,
   onGetNewRandom,
 }) => {
+  const fullScreen = useFullScreenDialog();
   if (!book) return null;
 
   return (
-    <Dialog open={open} onClose={onClose} maxWidth="md" fullWidth>
+    <Dialog fullScreen={fullScreen} open={open} onClose={onClose} maxWidth="md" fullWidth>
       <DialogTitle sx={styles.dialogTitleStyles}>
         {t('dialogs.randomBook.title')}
         <IconButton onClick={onClose} size="small">

@@ -8,10 +8,12 @@ export const mainContainerStyles: SxProps<Theme> = {
 
 export const contentBoxStyles: SxProps<Theme> = {
   flexGrow: 1,
+  // Clears the fixed navbar above the first section.
+  pt: { xs: 8, md: 10 },
 };
 
 export const dividerStyles: SxProps<Theme> = {
-  my: '2rem',
+  my: { xs: '1.5rem', md: '2rem' },
   mx: 'auto',
   width: '80%',
   maxWidth: '1200px',

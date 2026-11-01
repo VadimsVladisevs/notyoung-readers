@@ -10,11 +10,16 @@
     "addBook": "Добавить книгу",
     "statistics": "Статистика",
     "login": "Войти",
-    "logout": "Выйти"
+    "logout": "Выйти",
+    "account": "Аккаунт",
+    "accountOf": "Аккаунт {name}",
+    "editMode": "Режим редактирования"
   },
   "sections": {
     "library": {
-      "title": "Библиотека клуба"
+      "title": "Библиотека клуба",
+      "prev": "Назад",
+      "next": "Вперёд"
     },
     "currentBook": {
       "title": "Выбранная книжка",
