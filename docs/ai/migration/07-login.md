@@ -1,6 +1,6 @@
 # Phase 7: Login
 
-Part of [PLAN.md](PLAN.md). Status: ◐ (started 2026-11-01)
+Part of [PLAN.md](PLAN.md). Status: ☑ (done 2026-11-01)
 
 ## Goal
 Replace the per-request club password (header `X-Club-Password`) with a login and a server session. Writes need a logged-in user with role ADMIN.
@@ -21,7 +21,7 @@ Done when the header auth is gone and writes need a logged-in user with the righ
 - [x] **2. Dev seed:** a `dev`-profile runner inserts `admin` / `club-secret` with `["ADMIN"]` when there's no `admin` user.
 - [x] **3. Backend tests:** `SecurityTests` rewritten around a real login; new `AuthControllerTests`, `CsrfCookieTests`; `IntegrationTest` seeds `admin`; controller tests use `admin()` (mock ADMIN user + CSRF). `WebControllerTests`, `PasswordServiceTests`, `PasswordPropertiesTests` deleted.
 - [x] **4. Frontend:** `api.ts` (no password, CSRF header, login/logout/me), auth context, login dialog, app bar login/logout, selection hidden when logged out, approval dialog without a password, session-expired handling, locales, tests.
-- [ ] **5. Staging:** `render.yaml` without `ADMIN_PASSWORD_HASH` (done). Still to do (user): add `roles: ["ADMIN"]` to `readersDB_staging.users.admin` and remove the env var on Render, after the push.
+- [x] **5. Staging:** `render.yaml` without `ADMIN_PASSWORD_HASH`. The user added `roles: ["ADMIN"]` to `readersDB_staging.users.admin` (`docker run --rm mongo:8.0 mongosh '<uri>' --eval …`; no `-it` in Git Bash) and removed the env var on Render.
 - [x] **6. Cutover doc:** add the prod `roles` update and the env removal to [11-data-check-cutover.md](11-data-check-cutover.md).
 - [x] **7. Docs:** README, `architecture.md`, `backend.md`, `frontend.md`, `workflow.md`, then the `update-ai-docs` skill.
 
@@ -42,5 +42,5 @@ Done when the header auth is gone and writes need a logged-in user with the righ
   - login → 200, session cookie `HttpOnly` + `Secure`; `me` → user
   - writes after login pass auth (404 missing id, 409 finished book, no data changed)
   - logout → 204, then write → 401
-- [ ] Local browser (user): log in as `admin` with the club password, finish and start a book, log out; selection hidden when logged out.
-- [ ] Staging: log in with the real club password, run start/finish once, log out.
+- [x] Local browser (user): log in as `admin` with the club password, finish and start a book, log out; selection hidden when logged out.
+- [x] Staging (user, `d481373`): log in with the real club password, run start/finish once, log out.
