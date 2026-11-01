@@ -11,17 +11,15 @@ export const parseRating = (value: string): number | null => {
 export const useApprovalDialog = (
   open: boolean,
   ratingRequired: boolean,
-  onConfirm: (rating: number | null, password: string) => Promise<void>
+  onConfirm: (rating: number | null) => Promise<void>
 ) => {
   const [rating, setRating] = useState<string>('');
-  const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     if (!open) {
       setRating('');
-      setPassword('');
       setError(null);
     }
   }, [open]);
@@ -34,18 +32,10 @@ export const useApprovalDialog = (
     }
   }, []);
 
-  const handlePasswordChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
-    setPassword(e.target.value);
-  }, []);
-
   const handleConfirm = useCallback(async () => {
     const ratingValue = parseRating(rating);
     if (ratingRequired && ratingValue === null) {
       setError(t('dialogs.approval.ratingRequired'));
-      return;
-    }
-    if (!password) {
-      setError(t('dialogs.approval.passwordRequired'));
       return;
     }
 
@@ -53,30 +43,26 @@ export const useApprovalDialog = (
     setError(null);
 
     try {
-      await onConfirm(ratingValue, password);
+      await onConfirm(ratingValue);
       setRating('');
-      setPassword('');
     } catch (err) {
-      const wrongPassword = err instanceof ApiError && err.status === 401;
-      setError(t(wrongPassword ? 'dialogs.approval.wrongPassword' : 'dialogs.approval.saveFailed'));
+      const sessionExpired = err instanceof ApiError && err.status === 401;
+      setError(t(sessionExpired ? 'dialogs.approval.sessionExpired' : 'dialogs.approval.saveFailed'));
     } finally {
       setLoading(false);
     }
-  }, [password, rating, ratingRequired, onConfirm]);
+  }, [rating, ratingRequired, onConfirm]);
 
   const resetForm = useCallback(() => {
     setRating('');
-    setPassword('');
     setError(null);
   }, []);
 
   return {
     rating,
-    password,
     error,
     loading,
     handleRatingChange,
-    handlePasswordChange,
     handleConfirm,
     resetForm,
   };

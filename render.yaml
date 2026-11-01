@@ -13,5 +13,3 @@ services:
       # Secrets: entered in the Render dashboard, never in the repo
       - key: DB_URL
         sync: false
-      - key: ADMIN_PASSWORD_HASH
-        sync: false

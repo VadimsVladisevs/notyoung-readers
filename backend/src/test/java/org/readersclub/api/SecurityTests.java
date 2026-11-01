@@ -9,14 +9,16 @@ import org.readersclub.model.Book;
 import org.readersclub.model.BookStatus;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
+import org.springframework.mock.web.MockHttpSession;
 import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder;
-import org.springframework.test.web.servlet.request.RequestPostProcessor;
 
+import java.util.List;
 import java.util.function.Function;
 import java.util.stream.Stream;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.readersclub.api.factory.BookFactory.createDefaultBook;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
@@ -32,47 +34,99 @@ class SecurityTests extends IntegrationTest {
                 id -> patch("/api/books/{id}/update", id).contentType(MediaType.APPLICATION_JSON).content("{\"title\": \"changed\"}"),
                 id -> patch("/api/books/{id}/start", id),
                 id -> patch("/api/books/{id}/finish", id).contentType(MediaType.APPLICATION_JSON).content("{\"rating\": 5}"),
-                id -> delete("/api/books/{id}", id),
-                id -> post("/api/check-password")
+                id -> delete("/api/books/{id}", id)
         ).map(Arguments::of);
     }
 
-    private static Stream<Arguments> unauthorizedWrites() {
-        return writeRequests().flatMap(args -> Stream.of(
-                Arguments.of(args.get()[0], "no header", (RequestPostProcessor) request -> request),
-                Arguments.of(args.get()[0], "wrong password", clubPassword("wrong")),
-                Arguments.of(args.get()[0], "blank password", clubPassword(" "))));
+    private void assertBookUnchanged(Book book) {
+        assertEquals(1, bookRepository.count());
+        Book stored = bookRepository.findById(book.getId()).orElseThrow();
+        assertEquals(book.getTitle(), stored.getTitle());
+        assertEquals(BookStatus.NEW, stored.getStatus());
     }
 
-    @ParameterizedTest(name = "[{index}] {1}")
-    @MethodSource("unauthorizedWrites")
-    void writesWithoutCorrectPasswordReturn401AndChangeNothing(Function<String, MockHttpServletRequestBuilder> request,
-                                                                String description,
-                                                                RequestPostProcessor password) throws Exception {
+    @ParameterizedTest
+    @MethodSource("writeRequests")
+    void anonymousWriteReturns401AndChangesNothing(Function<String, MockHttpServletRequestBuilder> request) throws Exception {
         Book book = bookRepository.save(createDefaultBook(BookStatus.NEW));
 
-        mockMvc.perform(request.apply(book.getId()).with(password))
+        mockMvc.perform(request.apply(book.getId()).with(csrf()))
                 .andExpect(status().isUnauthorized())
                 .andExpect(content().contentType(MediaType.APPLICATION_PROBLEM_JSON))
                 .andExpect(jsonPath("$.status").value(401))
                 .andExpect(jsonPath("$.title").value("Unauthorized"));
 
-        assertEquals(1, bookRepository.count());
-        assertEquals(book.getTitle(), bookRepository.findById(book.getId()).orElseThrow().getTitle());
-        assertEquals(BookStatus.NEW, bookRepository.findById(book.getId()).orElseThrow().getStatus());
+        assertBookUnchanged(book);
+    }
+
+    @ParameterizedTest
+    @MethodSource("writeRequests")
+    void loggedInWriteWithoutCsrfTokenReturns403(Function<String, MockHttpServletRequestBuilder> request) throws Exception {
+        Book book = bookRepository.save(createDefaultBook(BookStatus.NEW));
+        MockHttpSession session = login(USERNAME, PASSWORD);
+
+        mockMvc.perform(request.apply(book.getId()).session(session))
+                .andExpect(status().isForbidden())
+                .andExpect(content().contentType(MediaType.APPLICATION_PROBLEM_JSON))
+                .andExpect(jsonPath("$.status").value(403));
+
+        assertBookUnchanged(book);
+    }
+
+    @ParameterizedTest
+    @MethodSource("writeRequests")
+    void userWithoutAdminRoleGets403(Function<String, MockHttpServletRequestBuilder> request) throws Exception {
+        Book book = bookRepository.save(createDefaultBook(BookStatus.NEW));
+        saveUser("reader", PASSWORD_HASH, List.of());
+        MockHttpSession session = login("reader", PASSWORD);
+
+        mockMvc.perform(request.apply(book.getId()).session(session).with(csrf()))
+                .andExpect(status().isForbidden())
+                .andExpect(content().contentType(MediaType.APPLICATION_PROBLEM_JSON))
+                .andExpect(jsonPath("$.status").value(403));
+
+        assertBookUnchanged(book);
     }
 
     @Test
-    void writeWithCorrectPasswordSucceeds() throws Exception {
+    void legacyUserWithoutRolesFieldCannotWrite() throws Exception {
         Book book = bookRepository.save(createDefaultBook(BookStatus.NEW));
+        saveUser("legacy", PASSWORD_HASH, null);
+        MockHttpSession session = login("legacy", PASSWORD);
 
-        mockMvc.perform(patch("/api/books/{id}/start", book.getId()).with(clubPassword()))
+        mockMvc.perform(patch("/api/books/{id}/start", book.getId()).session(session).with(csrf()))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    void writeAfterLoginSucceeds() throws Exception {
+        Book book = bookRepository.save(createDefaultBook(BookStatus.NEW));
+        MockHttpSession session = login(USERNAME, PASSWORD);
+
+        mockMvc.perform(patch("/api/books/{id}/start", book.getId()).session(session).with(csrf()))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.status").value("progress"));
     }
 
     @Test
-    void readsNeedNoPassword() throws Exception {
+    void oldPasswordHeaderNoLongerAuthenticates() throws Exception {
+        Book book = bookRepository.save(createDefaultBook(BookStatus.NEW));
+
+        mockMvc.perform(patch("/api/books/{id}/start", book.getId()).with(csrf())
+                        .header("X-Club-Password", PASSWORD))
+                .andExpect(status().isUnauthorized());
+
+        assertBookUnchanged(book);
+    }
+
+    @Test
+    void checkPasswordEndpointIsGone() throws Exception {
+        mockMvc.perform(post("/api/check-password").with(admin()))
+                .andExpect(status().isNotFound());
+    }
+
+    @Test
+    void readsNeedNoLogin() throws Exception {
         Book book = bookRepository.save(createDefaultBook(BookStatus.NEW));
 
         mockMvc.perform(get("/api/books")).andExpect(status().isOk());
@@ -82,12 +136,9 @@ class SecurityTests extends IntegrationTest {
     }
 
     @Test
-    void authenticatedWriteCreatesNoSession() throws Exception {
-        Book book = bookRepository.save(createDefaultBook(BookStatus.NEW));
-
-        mockMvc.perform(patch("/api/books/{id}/start", book.getId()).with(clubPassword()))
+    void anonymousReadCreatesNoSession() throws Exception {
+        mockMvc.perform(get("/api/books"))
                 .andExpect(status().isOk())
-                .andExpect(header().doesNotExist(HttpHeaders.SET_COOKIE))
                 .andExpect(request().sessionAttributeDoesNotExist("SPRING_SECURITY_CONTEXT"));
     }
 

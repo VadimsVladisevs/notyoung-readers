@@ -1,6 +1,6 @@
 # Readers Club
 
-Website of a book club ("НЕЮНЫЙ ЧИТАТЕЛЬ"): the books the club plans to read, is reading and has finished, plus per-tag statistics. A shared club password protects changes.
+Website of a book club ("НЕЮНЫЙ ЧИТАТЕЛЬ"): the books the club plans to read, is reading and has finished, plus per-tag statistics. Changes need a login (one shared club account, role ADMIN).
 
 ## Where things are
 - **Branch `migration/spring-react`:** the Node.js → Spring Boot + React migration is in progress. The plan and its current phase are in `docs/ai/migration/PLAN.md`.
@@ -17,7 +17,7 @@ Website of a book club ("НЕЮНЫЙ ЧИТАТЕЛЬ"): the books the club pla
 ## Gotchas for every task
 - Run Maven as `./mvnw` from **Git Bash**. `mvnw.cmd` breaks on the apostrophe in the `Reader's Club` path.
 - Backend tests need **Docker** running (Testcontainers).
-- Keep secrets out of the repo. Config comes from env vars (`DB_URL`, `ADMIN_PASSWORD_HASH`, `PORT`).
+- Keep secrets out of the repo. Config comes from env vars (`DB_URL`, `DB_NAME`, `PORT`).
 
 ## After changing code
 Run the `update-ai-docs` skill so `docs/ai/` keeps matching the code.

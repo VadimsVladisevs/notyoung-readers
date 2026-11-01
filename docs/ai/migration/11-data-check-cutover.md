@@ -4,9 +4,10 @@ Part of [PLAN.md](PLAN.md). Status: ☐ (drafted 2026-11-01 as the old Phase 7; 
 
 ## Revisit at phase start
 Phases 7–10 change parts of this plan. Re-check every step before starting:
-- **Login (Phase 7)** may replace `ADMIN_PASSWORD_HASH` and the `X-Club-Password` checks below (env vars in step 12, password checks in steps 9 and 13).
+- **Login (Phase 7, done):** `ADMIN_PASSWORD_HASH` and the `X-Club-Password` header are gone. The app logs in against prod `users`, and the `admin` document needs `roles: ["ADMIN"]` (step 12). Steps 9 and 13 check the login instead of the header.
 - **Images in MongoDB (Phase 10)** moves covers into the DB. Step 4 (move covers to `frontend/public/images`, Dockerfile `COPY`) then changes or drops, and the image import must run on prod `readersDB` before or at cutover.
-- New collections or indexes from Phases 7–10 get created on prod at cutover. List them here.
+- New collections or indexes from Phases 7–10 get created on prod at cutover. List them here:
+  - Phase 7: no new collection. The new field `users.admin.roles` is added in step 12.
 
 ## Goal
 Replace the legacy Node service on Render with the new Docker image. It runs against the same Atlas data, with every write protected on the server, and the legacy files are retired. Checks deferred from Phase 6 come first: the browser walk-through on staging, prod counts unchanged, staging isolation and cold-start timing.
@@ -20,7 +21,7 @@ Replace the legacy Node service on Render with the new Docker image. It runs aga
 - Atlas URIs stay out of the agent transcript. The user runs the commands against Atlas.
 
 ## Open items from earlier phases
-- Check, read-only, that the hash in Atlas `users.admin` matches the club password (Phase 3).
+- The prod login uses the hash in Atlas `users.admin` directly (Phase 7), so the club password stays the same. The step 9 staging login checks it on the copy.
 - Prod has a single `progress` book; the local data had 2. Look for duplicate titles too (Phases 4, 6).
 - Prod `books` has no unique `title` index, only `_id` (Phase 6). Decide whether to add one after the duplicate check.
 
@@ -60,7 +61,7 @@ Replace the legacy Node service on Render with the new Docker image. It runs aga
   - statistics toggle
   - random pick (`new` only)
   - start, finish with rating, add, delete
-  - unauthenticated writes get 401
+  - login and logout; logged out, book selection is hidden and writes get 401
   - covers load
   
   Then re-run the step-2 counts on prod: unchanged. Cold start: idle >15 min, then `curl -w '%{time_total}'` on `/actuator/health` and `/`.
@@ -68,7 +69,7 @@ Replace the legacy Node service on Render with the new Docker image. It runs aga
 - [ ] **11. PR to `main`** (`gh pr create`, merge commit). The user merges.
 - [ ] **12. Prod switch (user, guided; a few minutes of downtime accepted):**
   1. Check the plan (Free → the 512 MB JVM flags fit) and that the branch is `main`.
-  2. Add the new env vars (today `ADMIN_PASSWORD_HASH`; see "Revisit").
+  2. Atlas, prod `readersDB` (the user runs it): `db.users.updateOne({username: "admin"}, {$set: {roles: ["ADMIN"]}})`. This is additive, and the legacy app ignores it. If the legacy service has `ADMIN_PASSWORD_HASH` set, remove it.
   3. Settings → Build → Source → Docker, Dockerfile `./Dockerfile`, health check path `/actuator/health`. Remove the Node build/start commands.
   4. Atlas → Database Access → rotate the prod user's password, then update `DB_URL` on Render right away (the old app breaks from this moment).
   5. Deploy.
@@ -76,7 +77,7 @@ Replace the legacy Node service on Render with the new Docker image. It runs aga
   - health UP
   - `/` and covers 200
   - `/api/books` counts = baseline
-  - auth: 401 without credentials, success with them (user)
+  - auth: writes 401 when logged out; the user logs in as `admin` with the club password
   - one browser look by the user
   - no data writes on prod by the agent
 - [ ] **14. Retire staging:**

@@ -5,21 +5,21 @@ Spring Boot 4.1 (Spring Framework 7, Jackson 3), Java 25 (Temurin), Maven wrappe
 ## Package map
 | Package | Holds |
 |---|---|
-| `api` | `BookController` (books + statistics), `WebController` (`check-password`: an empty 200; the filter chain does the check), `ApiExceptionHandler` (all error mapping, 401 included) |
-| `service` | `BookService` (all book logic: lookup, create, update-merge, start/finish, random, statistics), `PasswordService` (bcrypt `matches` against the configured hash) |
-| `repository` | `BookRepository` (`MongoRepository`; `findByStatus` takes the **lowercase string**, not the enum) |
-| `model` | `Book` (`@Document("books")`), `BookStatus`, `Statistics`; `model.dto` request records; `model.converter` Mongo converters for the status |
-| `configuration` | `MongoConfiguration` (auditing + custom conversions), `WebConfiguration` (status converter for MVC), `PasswordProperties` (`readers-club.password-hash`) |
-| `security` | `SecurityConfiguration` (filter chain: GET/HEAD `/api/**` public, rest of `/api/**` authenticated, stateless, no CSRF/CORS) and `ClubPasswordFilter` (`X-Club-Password` header). Temporary, Phase 7 deletes it |
+| `api` | `BookController` (books + statistics), `AuthController` (`/api/auth` login / logout / me: session login done by hand, see Auth below), `ApiExceptionHandler` (all error mapping, 401/403 included) |
+| `service` | `BookService` (all book logic: lookup, create, update-merge, start/finish, random, statistics) |
+| `repository` | `BookRepository` (`MongoRepository`; `findByStatus` takes the **lowercase string**, not the enum), `UserRepository` (`findByUsername`) |
+| `model` | `Book` (`@Document("books")`), `User` (record, `@Document("users")`), `BookStatus`, `Statistics`; `model.dto` request/response records (`LoginDto`, `CurrentUserDto`, book DTOs); `model.converter` Mongo converters for the status |
+| `configuration` | `MongoConfiguration` (auditing + custom conversions), `WebConfiguration` (status converter for MVC), `DevAdminSeed` (`dev` profile only: inserts `admin` / `club-secret` with ADMIN when there's no `admin`) |
+| `security` | `SecurityConfiguration` (filter chain: GET/HEAD `/api/**` and `/api/auth/**` public, rest of `/api/**` `hasRole("ADMIN")`, session, `csrf.spa()`, no CORS; beans `PasswordEncoder` (bcrypt) + `AuthenticationManager`) and `MongoUserDetailsService` (package-private, built inside the config; role `X` → authority `ROLE_X`) |
 | `exception` | Unchecked domain exceptions |
 | `validator` | `BookValidator` (status string check), `@ValidBookStatus` + its validator (not used on any field yet) |
 
 ## Conventions
-- **Errors:** throw an unchecked domain exception from `exception/` and map it to a `ProblemDetail` status in `ApiExceptionHandler`. Not found → 404, bad input → 400, wrong state transition → 409. 401 comes from Spring Security: the entry point in `SecurityConfiguration` passes the `AuthenticationException` to `ApiExceptionHandler`. Controllers return `ResponseEntity` and declare no checked exceptions.
+- **Errors:** throw an unchecked domain exception from `exception/` and map it to a `ProblemDetail` status in `ApiExceptionHandler`. Not found → 404, bad input → 400, wrong state transition → 409. 401/403 come from Spring Security: the entry point and the access-denied handler in `SecurityConfiguration` pass the exception to `ApiExceptionHandler`. `BadCredentialsException` → 401 "Wrong username or password", other `AuthenticationException` → 401 "Login required", `AccessDeniedException` (missing role, and CSRF failures, which subclass it) → 403. Controllers return `ResponseEntity` and declare no checked exceptions.
 - **Validation:** request bodies are Java records in `model.dto` with Jakarta constraints, validated with `@Valid` in the controller. Field errors come back in `errors`. Single request params use constraint annotations directly (Spring's built-in method validation). Leave `@Validated` off controllers: it would turn those errors into 500s.
 - **Status values:** `BookStatus` serialises as its lowercase value (`@JsonValue`) in JSON and in Mongo. Repository queries take `status.getValue()`.
 - **Partial update:** `BookService.updateAndSave` rebuilds the `Book`. Every field missing from the builder (e.g. `createdAt`) is lost, so carry it over.
-- **Auth:** a new non-GET `/api` endpoint is protected automatically (deny by default). Don't add `@CrossOrigin`. Build the filter inside `SecurityConfiguration`, never as a `@Component` (Boot would also register it as a plain servlet filter). Boot's default in-memory user is excluded on `@SpringBootApplication` (`UserDetailsServiceAutoConfiguration`).
+- **Auth:** a new non-GET `/api` endpoint needs ADMIN automatically (deny by default), except under `/api/auth/**`. Don't add `@CrossOrigin`. `formLogin` / `logout` stay disabled: `AuthController` logs in by hand (`AuthenticationManager` → `ChangeSessionIdAuthenticationStrategy` → save the context with `HttpSessionSecurityContextRepository`), so errors stay ProblemDetails and the body is JSON. The CSRF token isn't rotated on login (cookie double-submit, not tied to the session). `/me` calls `csrfToken.getToken()` so the `XSRF-TOKEN` cookie is written on page load. Users are read-only: don't implement `UserDetailsPasswordService`, or a login would rewrite prod hashes. Failed logins log a WARN without the username. Defining our own `AuthenticationManager` makes Boot's default in-memory user back off (no generated password in the log). No rate limit yet.
 - **Logging:** Lombok `@Slf4j`; INFO by default, DEBUG for `org.readersclub` in `dev`.
 
 ## Config
@@ -27,18 +27,25 @@ Spring Boot 4.1 (Spring Framework 7, Jackson 3), Java 25 (Temurin), Maven wrappe
 | Env var | Property | Notes |
 |---|---|---|
 | `DB_URL` | `spring.mongodb.uri` | Boot 4 prefix is `spring.mongodb.*`, **not** `spring.data.mongodb.*` |
-| `ADMIN_PASSWORD_HASH` | `readers-club.password-hash` | Required outside `dev`. Must be a **bcrypt** hash (`$2a$`/`$2b$`/`$2y$`); anything else fails at startup (`@Validated` `PasswordProperties`). Prod value: the legacy `users.admin` hash |
 | `PORT` | `server.port` | Default 8080 |
 | `DB_NAME` | `spring.mongodb.database` | Default `readersDB`. Wins over a database path in `DB_URL`. Staging sets `readersDB_staging` |
 
 Actuator exposes **only** `/actuator/health`, status without details (`{"status":"UP"}`); public, because security only guards `/api/**`. Render's health check uses it. `ActuatorTests` keeps the other endpoints hidden.
 
-Profile `dev` (`application-dev.yaml`): `DB_URL` defaults to `mongodb://localhost:27017/readersDB` (the compose Mongo), and `ADMIN_PASSWORD_HASH` defaults to the test hash for `club-secret`. Env vars override both. `./mvnw spring-boot:run` turns on `dev` by itself (`spring-boot-maven-plugin` `<profiles>` in `pom.xml`); the packaged jar does not.
+Session cookie (`server.servlet.session.cookie.*` in `application.yaml`): `http-only`, `secure`, `same-site: lax`. Default timeout (30 min). Login accounts come from the DB (`users`), not from config.
+
+Profile `dev` (`application-dev.yaml`): `DB_URL` defaults to `mongodb://localhost:27017/readersDB` (the compose Mongo); env overrides it. `DevAdminSeed` creates the `admin` / `club-secret` login when there's no `admin` user. `./mvnw spring-boot:run` turns on `dev` by itself (`spring-boot-maven-plugin` `<profiles>` in `pom.xml`); the packaged jar does not.
 
 ## Tests
 `./mvnw verify` runs everything; Docker must be running.
-- **Integration:** extend `org.readersclub.IntegrationTest`. It gives you `@SpringBootTest`, `MockMvc`, `BookRepository` and `MongoTemplate`, a clean `books` collection before each test, and a test password (`PASSWORD` / bcrypt cost-4 `PASSWORD_HASH`). Every write needs `.with(clubPassword())` (or `clubPassword("wrong")` for negative cases); without it the test gets 401. Auth coverage is in `SecurityTests`. Mongo is a Testcontainers `mongo:8.0` from `TestcontainersConfiguration` (`@ServiceConnection`). Keep the base class annotations unchanged so every class shares one Spring context and container.
-- **Web slice:** `@WebMvcTest` + `@MockitoBean` (see `ApiExceptionHandlerTests`) for behaviour that's hard to trigger with a real DB. Slices don't load `SecurityConfiguration`: add `@Import(SecurityConfiguration.class)`, `@MockitoBean PasswordService` and `excludeAutoConfiguration = UserDetailsServiceAutoConfiguration.class`, or Boot's default chain answers 401 to everything.
+- **Integration:** extend `org.readersclub.IntegrationTest`. It gives you `@SpringBootTest`, `MockMvc`, `BookRepository` and `MongoTemplate`. Before each test it empties `books` and recreates `users` with `admin` / `club-secret` (bcrypt cost 4, role ADMIN). Helpers:
+  - `admin()`: a mock ADMIN user plus a CSRF token. Use it for every write in controller tests.
+  - `login(username, password)`: the real login; returns the `MockHttpSession`.
+  - `saveUser(username, hash, roles)`: `roles == null` leaves the field out, like legacy docs.
+
+  Auth coverage is in `SecurityTests` (who may write) and `AuthControllerTests` (login / logout / me).
+- **CSRF in MockMvc:** spring-security-test's `csrf()` replaces the shared context's CSRF repository with a test one that never writes the cookie. So the `XSRF-TOKEN` cookie is tested in its own `@WebMvcTest` slice (`CsrfCookieTests`), which never uses `csrf()`. Also, MockMvc marks a session passed with `.session()` as an invalid requested id, so session-fixation code skips it. Set `request.setRequestedSessionIdValid(true)` to test the id change. Mongo is a Testcontainers `mongo:8.0` from `TestcontainersConfiguration` (`@ServiceConnection`). Keep the base class annotations unchanged so every class shares one Spring context and container.
+- **Web slice:** `@WebMvcTest` + `@MockitoBean` (see `ApiExceptionHandlerTests`) for behaviour that's hard to trigger with a real DB. Slices don't load `SecurityConfiguration`: add `@Import(SecurityConfiguration.class)` and `@MockitoBean UserRepository` (needed by its `AuthenticationManager`), or Boot's default chain answers 401 to everything.
 - **Unit:** Mockito (`@ExtendWith(MockitoExtension.class)`); strict stubs fail a test on unused stubbing.
 - **Fixtures:** `api.factory.BookFactory`.
 - **Bug fixes are test-first:** write a test that fails on the bug, then fix.

@@ -7,7 +7,8 @@ import * as styles from './current-book.styles';
 
 export interface CurrentBookProps {
   book: Book | null;
-  onSelectClick: () => void;
+  /** Omitted when the user may not select a book: the select button is hidden. */
+  onSelectClick?: () => void;
 }
 
 const CurrentBook: React.FC<CurrentBookProps> = ({ book, onSelectClick }) => {
@@ -42,14 +43,16 @@ const CurrentBook: React.FC<CurrentBookProps> = ({ book, onSelectClick }) => {
             <Typography variant="h5" sx={styles.placeholderTitleStyles}>
               {t('sections.currentBook.noBook')}
             </Typography>
-            <Button
-              variant="contained"
-              color="primary"
-              onClick={onSelectClick}
-              sx={styles.selectButtonStyles}
-            >
-              {t('sections.currentBook.selectButton')}
-            </Button>
+            {onSelectClick && (
+              <Button
+                variant="contained"
+                color="primary"
+                onClick={onSelectClick}
+                sx={styles.selectButtonStyles}
+              >
+                {t('sections.currentBook.selectButton')}
+              </Button>
+            )}
           </Box>
         )}
       </Container>

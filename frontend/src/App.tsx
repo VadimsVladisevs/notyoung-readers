@@ -1,6 +1,7 @@
 import React from 'react';
 import { ThemeProvider, createTheme, CssBaseline } from '@mui/material';
 import { BooksProvider } from './context/books-context';
+import { AuthProvider } from './context/auth-context';
 import HomePage from './components/home-page';
 import './App.css';
 
@@ -56,9 +57,11 @@ function App() {
   return (
     <ThemeProvider theme={theme}>
       <CssBaseline />
-      <BooksProvider>
-        <HomePage />
-      </BooksProvider>
+      <AuthProvider>
+        <BooksProvider>
+          <HomePage />
+        </BooksProvider>
+      </AuthProvider>
     </ThemeProvider>
   );
 }

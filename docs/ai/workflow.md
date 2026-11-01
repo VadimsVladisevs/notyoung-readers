@@ -14,12 +14,12 @@
 | Backend build + all tests | `cd backend && ./mvnw verify` |
 | Backend compile only | `./mvnw -q compile` |
 | Local Mongo | `docker compose up -d --wait` / `docker compose stop` (repo root) |
-| Run backend against local Mongo | `cd backend && ./mvnw spring-boot:run` → `http://localhost:8080/api/books`. `dev` profile by default; password `club-secret` unless `ADMIN_PASSWORD_HASH='<bcrypt hash>'` is set (single quotes: the hash contains `$`) |
-| Try a protected write | `curl -X POST -H "X-Club-Password: club-secret" localhost:8080/api/check-password` → 200 (401 without the header) |
+| Run backend against local Mongo | `cd backend && ./mvnw spring-boot:run` → `http://localhost:8080/api/books`. `dev` profile by default; creates login `admin` / `club-secret` (ADMIN) if there's no `admin` user. The local compose data already has `admin` (the real club password, `roles: ["ADMIN"]` added 2026-11-01), so the seed is skipped there |
+| Try a protected write | `curl -c jar -b jar localhost:8080/api/auth/me` (sets `XSRF-TOKEN`), then send the cookie's value as `-H "X-XSRF-TOKEN: <token>"` with `-b jar -c jar` on `POST /api/auth/login` (JSON body) and the write. Without a login → 401, without the token → 403. The session cookie is `Secure`; curl still sends it to `localhost` |
 | Frontend build + tests | `cd frontend && npm run build && npm test` |
 | Run frontend | `npm run dev` → `http://localhost:5173`, `/api` proxied to `:8080`; more in [frontend.md](frontend.md) |
 | App image (frontend + backend + covers) | `docker build -t readers-club .` (repo root, ~2 min cold). Tests don't run inside; run them first |
-| Run the image against local Mongo | `docker run --rm --memory=512m -p 8090:8080 -e DB_URL=mongodb://host.docker.internal:27017/readersDB -e ADMIN_PASSWORD_HASH='<bcrypt hash>' readers-club` → `http://localhost:8090` (password `club-secret` with the test hash from `application-dev.yaml`) |
+| Run the image against local Mongo | `docker run --rm --memory=512m -p 8090:8080 -e DB_URL=mongodb://host.docker.internal:27017/readersDB readers-club` → `http://localhost:8090`. Log in with an account from `users` (the image runs without `dev`, so there's no seed) |
 | Legacy app | `node app.js` → `http://localhost:3000` (needs `DB_URL` in root `.env`, gitignored) |
 
 When you start the backend in the background, stop it afterwards and check that port 8080 is free. Writes against the local Mongo change real-looking data; prefer read-only checks or tests.

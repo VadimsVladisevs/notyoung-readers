@@ -8,7 +8,8 @@
     "finishedBooks": "Прочитанные книжки",
     "bookSelection": "Выбор книги",
     "statistics": "Статистика",
-    "contacts": "Контакты"
+    "login": "Войти",
+    "logout": "Выйти"
   },
   "sections": {
     "library": {
@@ -51,13 +52,21 @@
     "approval": {
       "title": "Подтверждение выбора",
       "ratingLabel": "Оценка для",
-      "passwordLabel": "Код подтверждения",
-      "passwordRequired": "Введите код подтверждения",
-      "wrongPassword": "Неправильный пароль!",
       "ratingRequired": "Введите оценку от 1 до 10",
       "saveFailed": "Не удалось сохранить. Попробуйте ещё раз.",
+      "sessionExpired": "Сессия истекла. Войдите снова.",
       "cancelButton": "Отмена",
       "confirmButton": "Подтвердить"
+    },
+    "login": {
+      "title": "Вход",
+      "usernameLabel": "Логин",
+      "passwordLabel": "Пароль",
+      "required": "Введите логин и пароль",
+      "wrongCredentials": "Неверный логин или пароль",
+      "failed": "Не удалось войти. Попробуйте ещё раз.",
+      "cancelButton": "Отмена",
+      "submitButton": "Войти"
     },
     "statistics": {
       "title": "Статистика",

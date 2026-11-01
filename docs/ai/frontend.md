@@ -5,10 +5,11 @@ React 19 + TypeScript 7 (strict) + MUI 9, Swiper (library carousel), Chart.js vi
 ## Structure (`src/`)
 | Path | Role |
 |---|---|
-| `App.tsx` | MUI theme (Merriweather, primary `#212529`, secondary `#4ECCA3`) + `BooksProvider` + `HomePage` |
+| `App.tsx` | MUI theme (Merriweather, primary `#212529`, secondary `#4ECCA3`) + `AuthProvider` + `BooksProvider` + `HomePage` |
 | `components/<name>/` | One folder per UI block: `<name>.tsx`, and as needed `.hooks.ts` (state + handlers), `.styles.ts` (MUI `styled`/sx), `.constants.ts`, `index.ts` (default export). Re-exported from `components/index.ts` |
+| `context/auth-context.tsx` | `user` (from `me()` on mount; `null` = logged out), `isAdmin`, `login()`, `logout()`, `sessionExpired()` (forget the user after a 401 on a write) |
 | `context/books-context.tsx` | Loads **all** books once; derives `newBooks`, `currentBook` (first `progress`), `finishedBooks` (sorted by rating desc); `refreshBooks()` refetches after a write |
-| `services/api.ts` | `ApiService` over `fetch`, plus function exports the components use. Writes take the club password and send it as `X-Club-Password`; non-2xx → `ApiError` (`status`, ProblemDetail `detail`); empty body → `undefined`; `checkPassword()` → `true` / `false` on 401 |
+| `services/api.ts` | `ApiService` over `fetch`, plus function exports the components use. Every non-GET request copies the `XSRF-TOKEN` cookie into header `X-XSRF-TOKEN` (`CSRF_COOKIE` / `CSRF_HEADER`); the session cookie goes along by itself (same-origin `fetch`). Non-2xx → `ApiError` (`status`, ProblemDetail `detail`); empty body → `undefined`. `login()`, `logout()`; `me()` → the user, or `null` on 401 |
 | `routes.ts` | `API_ROUTES`, every backend URL (relative `/api/...`) |
 | `i18n.ts` + `locales/ru.json` | Own `t('dotted.key', params)` helper; put UI text in `ru.json` |
 | `types/index.ts` | `Book`, DTOs, `Statistics`; mirrors the backend contract in [architecture.md](architecture.md) |
@@ -16,7 +17,9 @@ React 19 + TypeScript 7 (strict) + MUI 9, Swiper (library carousel), Chart.js vi
 
 Main flows: library swiper of all books → selection dialog (`new` books; search by tag / title / author, checkboxes, random pick) → random-result dialog → approval dialog → refresh. Statistics dialog toggles count / average rating per tag. The legacy feature list is in [legacy-analysis.md](legacy-analysis.md); results of the parity check are in [migration/04-frontend-vite.md](migration/04-frontend-vite.md).
 
-**Approval dialog:** asks for the current book's rating (required, 1–10, comma or dot) and the club password, every time; the password lives only in dialog state. Confirm → `checkPassword` → `finishBook` → `startBook`, then `refreshBooks()` (also after a failure, since finish may have succeeded). A 401 shows «Неправильный пароль!»; any other error a generic message. The hook (`approval-dialog.hooks.ts`) picks the message from the error type; `home-page.hooks.ts` just throws.
+**Login:** «Войти» / «Выйти» right after «Статистика», in the desktop nav (before the social icons) and in the drawer. There is no «Контакты» button any more (removed 2026-11-01). «Войти» opens `login-dialog` (username + password, a form so Enter submits). A 401 shows «Неверный логин или пароль». **Book selection is shown only when `isAdmin`:** the «Выбор книги» nav item and the current-book «Выбрать книгу» button (props `onOpenBookSelection` / `onSelectClick` are passed as `undefined` to hide them). Browsing and statistics stay public.
+
+**Approval dialog:** asks for the current book's rating (required, 1–10, comma or dot); no password. Confirm → `finishBook` → `startBook`, then `refreshBooks()` (also after a failure, since finish may have succeeded). A 401 (the session is gone) shows «Сессия истекла. Войдите снова.», and `home-page.hooks.ts` calls `sessionExpired()`, which hides selection. Any other error shows a generic message. The hook (`approval-dialog.hooks.ts`) picks the message from the error type.
 
 ## Layout notes
 - **Navbar:** desktop nav from MUI `lg` (1200px) up, hamburger below. The desktop nav needs ~1150px, so at `md` it squeezed the title. The desktop title has `flexShrink: 0`; the mobile title is 0.9rem on `xs` and wraps on the narrowest phones.
@@ -29,12 +32,13 @@ Main flows: library swiper of all books → selection dialog (`new` books; searc
 
 ## Tests
 Vitest + React Testing Library + MSW 3, jsdom. Test files sit next to the code (`*.test.ts(x)`); `App.test.tsx` drives the full flows through MSW.
+- Auth in `App.test.tsx`: `renderApp({ loggedIn })` installs `mockAuth` (`me` / `login` / `logout` handlers sharing one fake session; login `admin` / `secret`) and waits for «Войти» or «Выйти», so the auth state is settled. A test sets `document.cookie = 'XSRF-TOKEN=…'` to check the CSRF header. An open MUI dialog makes the rest of the page `aria-hidden`, so query the app bar behind it with `{ hidden: true }`.
 - MSW 3: the strict option is `onUnhandledFrame: 'error'` (v2's `onUnhandledRequest` is silently ignored). Import `http`, `HttpResponse` from `msw`, `setupServer` from `msw/node`. Add write handlers per test with `server.use(...)`.
 - jsdom has no canvas: `statistics-dialog.test.tsx` mocks `react-chartjs-2`'s `Bar` to print labels and values.
 - jsdom is pinned to 29: jsdom 30 needs Node ≥ 24.15, the dev machine has 24.14.
 
 ## Known gaps
-- Starting a book with no book in progress goes through the approval dialog with only the password field. The club never does this (there's always a current book), so it's untested in the browser.
+- Starting a book with no book in progress goes through the approval dialog with no fields (just confirm). The club never does this (there's always a current book), so it's untested in the browser.
 - Confirm in the selection dialog is **disabled** with 0 books checked; the legacy page showed an error modal «Добавьте книжки для выбора» instead. The `noSelectedError` text is unused.
 - Unused `ru.json` keys from before Phase 4: `bookSelection.selectBookButton`, `bookSelection.closeButton`, `bookSelection.confirmMessage`, `randomBook.anotherButton`.
 - At a 320px viewport the library heading «Библиотека» (2.5rem) and the swiper slides are wider than the screen, so the page scrolls sideways. 360px and up are fine.

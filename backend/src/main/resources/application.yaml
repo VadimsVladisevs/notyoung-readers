@@ -1,13 +1,16 @@
 server:
   port: ${PORT:8080}
+  servlet:
+    session:
+      cookie:
+        http-only: true
+        secure: true
+        same-site: lax
 
 spring:
   mongodb:
     uri: ${DB_URL}
     database: ${DB_NAME:readersDB}
-
-readers-club:
-  password-hash: ${ADMIN_PASSWORD_HASH}
 
 management:
   endpoints:

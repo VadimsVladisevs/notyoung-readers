@@ -20,7 +20,7 @@ import * as styles from './approval-dialog.styles';
 export interface ApprovalDialogProps {
   open: boolean;
   onClose: () => void;
-  onConfirm: (rating: number | null, password: string) => Promise<void>;
+  onConfirm: (rating: number | null) => Promise<void>;
   currentBook: Book | null;
   newBook: Book | null;
 }
@@ -34,11 +34,9 @@ const ApprovalDialog: React.FC<ApprovalDialogProps> = ({
 }) => {
   const {
     rating,
-    password,
     error,
     loading,
     handleRatingChange,
-    handlePasswordChange,
     handleConfirm,
     resetForm,
   } = useApprovalDialog(open, currentBook !== null, onConfirm);
@@ -75,15 +73,6 @@ const ApprovalDialog: React.FC<ApprovalDialogProps> = ({
             </Box>
           )}
           
-          <TextField
-            fullWidth
-            type="password"
-            label={t('dialogs.approval.passwordLabel')}
-            value={password}
-            onChange={handlePasswordChange}
-            error={!!error}
-          />
-
           {error && (
             <Alert severity="error">{error}</Alert>
           )}

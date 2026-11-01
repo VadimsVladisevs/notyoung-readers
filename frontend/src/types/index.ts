@@ -48,3 +48,9 @@ export interface TagStatistics {
     rating?: number;
   }[];
 }
+
+/** The logged-in user from `/api/auth/me` and `/api/auth/login`. */
+export interface CurrentUser {
+  username: string;
+  roles: string[];
+}

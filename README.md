@@ -25,9 +25,12 @@ cd backend
 ```
 The app runs on `http://localhost:8080` (for example `GET /api/books`). `spring-boot:run` uses the `dev` profile, which defaults to:
 - `DB_URL=mongodb://localhost:27017/readersDB`
-- the club password `club-secret`, a test hash. Writes need it in the `X-Club-Password` header; the UI asks for it.
+- a login `admin` / `club-secret` with role ADMIN, created on startup when the database has no `admin` user.
 
-To override, set env vars before the command, e.g. `ADMIN_PASSWORD_HASH='<bcrypt hash>' ./mvnw spring-boot:run`. Use single quotes, because the hash contains `$`.
+Writes need a logged-in user with role ADMIN: log in with «Войти» in the app bar. Accounts live in the `users` collection (`username`, bcrypt `password`, `roles`). If your local data already has an `admin` without `roles`, it can log in but not write. Give it the role once:
+```bash
+docker compose exec mongo mongosh readersDB --eval 'db.users.updateOne({username: "admin"}, {$set: {roles: ["ADMIN"]}})'
+```
 
 ## 3. Frontend
 ```bash
@@ -44,11 +47,11 @@ cd frontend && npm test && npm run build
 ```
 
 ## Configuration (production)
-The base config has no defaults. Production sets these env vars: `DB_URL` (MongoDB URI), `ADMIN_PASSWORD_HASH` (bcrypt hash of the club password) and `PORT` (default 8080). `DB_NAME` picks the database (default `readersDB`).
+The base config has no defaults. Production sets these env vars: `DB_URL` (MongoDB URI) and `PORT` (default 8080). The login account is the `admin` document in the database's `users` collection, which needs `roles: ["ADMIN"]`. `DB_NAME` picks the database (default `readersDB`).
 
 ## Docker image and staging
 ```bash
 docker build -t readers-club .     # frontend + backend + covers in one image; tests don't run here
-docker run --rm -p 8090:8080 -e DB_URL=mongodb://host.docker.internal:27017/readersDB \n  -e ADMIN_PASSWORD_HASH='<bcrypt hash>' readers-club
+docker run --rm -p 8090:8080 -e DB_URL=mongodb://host.docker.internal:27017/readersDB readers-club
 ```
 Staging runs this image on Render (Free) at `https://readers-club-staging.onrender.com`, defined in `render.yaml` and deployed from the `migration/spring-react` branch. It uses `readersDB_staging`, a copy of the prod data, with an Atlas user that can only access that database. The first request after 15 minutes idle wakes the service and is slow.

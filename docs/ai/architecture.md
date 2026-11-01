@@ -27,12 +27,25 @@ MongoDB database `readersDB`, collection **`books`**, shared with the legacy app
 
 Workflow of a book: `new` → (start) `progress` → (finish with rating) `finished`. The club reads one book at a time; the UI treats the first `progress` book as "current".
 
-Collection **`users`** (legacy only): the `admin` user's **bcrypt** hash of the club password (`$2b$`, Node `bcrypt`). The new backend never reads it: the same hash is copied once into env `ADMIN_PASSWORD_HASH`, so the club password stays the same.
+Collection **`users`**, shared with the legacy app: login accounts. Today there is one shared club account, `admin`.
+
+| Field | Type | Notes |
+|---|---|---|
+| `username` | string | Unique (legacy Mongoose index) |
+| `password` | string | **bcrypt** hash of the club password (`$2b$` from Node `bcrypt`; Spring's `BCryptPasswordEncoder` reads it) |
+| `roles` | string[] | **New in Phase 7**, e.g. `["ADMIN"]`. Missing in legacy docs → no roles → can log in, can't write. The legacy app ignores it |
+| `createdAt`, `updatedAt`, `__v` | | Legacy Mongoose fields; ignored |
+
+The new backend only **reads** `users` (no password re-hashing on login). The one writer is the `dev`-profile seed (`DevAdminSeed`).
 
 ## API contract (backend)
 Errors are RFC 9457 `ProblemDetail` (`application/problem+json`): `title`, `status`, `detail`, `instance`. Validation errors add `errors: {field: message}`. Any unexpected exception → 500 with a generic detail; the real message is only logged.
 
-**Auth (temporary until Phase 7 login):** `GET`/`HEAD /api/**` are public. **Every other `/api/**` request** needs header `X-Club-Password: <club password>`. Without it, or with a wrong one → **401** ProblemDetail (`title` "Unauthorized"), checked before validation or lookup, so nothing changes. Stateless: no session, no cookies, no CSRF. **No CORS:** the dev server proxies `/api` and prod is same-origin, so cross-origin browser calls are blocked.
+**Auth:** login with a **server session** (in-memory; a restart or Render Free sleep logs everyone out). `GET`/`HEAD /api/**` and `/api/auth/**` are public. **Every other `/api/**` request** needs a logged-in user with role **ADMIN** plus the **CSRF token**. Spring Security sets the JS-readable cookie `XSRF-TOKEN` (e.g. on `GET /api/auth/me`), and the client sends it back in header `X-XSRF-TOKEN` on every non-GET request, `/api/auth/login` included. Errors are checked before validation or lookup, so nothing changes:
+- not logged in → **401** ("Login required")
+- missing or wrong CSRF token, or no ADMIN role → **403** ("Not allowed")
+
+The session cookie is `HttpOnly`, `Secure`, `SameSite=Lax`, and the login changes the session id. **No CORS:** the dev server proxies `/api` and prod is same-origin, so cross-origin browser calls are blocked.
 
 | Endpoint | Input | Success | Errors |
 |---|---|---|---|
@@ -45,9 +58,11 @@ Errors are RFC 9457 `ProblemDetail` (`application/problem+json`): `title`, `stat
 | `DELETE /api/books/{id}` | | 200, **empty body** | 404 |
 | `GET /api/books/random` | `?booksId=a&booksId=b` optional | 200 random book from the ids; with no ids, from `new` books only | 404 nothing to pick / unknown id |
 | `GET /api/statistics` | | 200 `{"statistics": {tag: count}}`, count of non-`new` books, sorted desc; a tag with only `new` books → 0 | |
-| `POST /api/check-password` | `X-Club-Password` header (no body or params) | 200 | 401 wrong, blank or missing |
+| `POST /api/auth/login` | JSON `{"username", "password"}`, both required | 200 `{"username", "roles": ["ADMIN"]}`, session cookie set | 400 + `errors` blank field; 401 wrong username or password; 403 no CSRF token |
+| `POST /api/auth/logout` | | 204, session invalidated (also when not logged in) | 403 no CSRF token |
+| `GET /api/auth/me` | | 200 `{"username", "roles"}` | 401 not logged in |
 
-All rows except the `GET`s also return 401 without the right header (see Auth above). The UI sends the header on every write and checks the password with `check-password` first (see [frontend.md](frontend.md)).
+All non-`GET` book rows also return 401/403 as described in Auth above. The UI calls `me` on page load and sends the CSRF header on every write (see [frontend.md](frontend.md)).
 
 `POST /api/books/add` rejects a missing `wiki` (400), although some legacy books have none (found in Phase 4). Send `""` when copying such books.
 

@@ -12,6 +12,8 @@ export const API_ROUTES = {
   BOOKS_RANDOM_WITH_IDS: (booksId: string[]) => 
     `${API_BASE}/books/random?${booksId.map(id => `booksId=${id}`).join('&')}`,
   STATISTICS: `${API_BASE}/statistics`,
-  CHECK_PASSWORD: `${API_BASE}/check-password`,
+  AUTH_LOGIN: `${API_BASE}/auth/login`,
+  AUTH_LOGOUT: `${API_BASE}/auth/logout`,
+  AUTH_ME: `${API_BASE}/auth/me`,
 } as const;
 

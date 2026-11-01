@@ -3,27 +3,46 @@ import userEvent from '@testing-library/user-event';
 import { http, HttpResponse } from 'msw';
 import App from './App';
 import { server } from './test/server';
-import { current, finishedHigh, newAnna, newBoris } from './test/books';
-import { PASSWORD_HEADER } from './services/api';
+import { allBooks, current, finishedHigh, newAnna, newBoris } from './test/books';
+import { CSRF_HEADER } from './services/api';
 
+const ADMIN = { username: 'admin', roles: ['ADMIN'] };
 const PASSWORD = 'secret';
+
+/** The backend session as MSW sees it: who /me returns, and a working login/logout. */
+const mockAuth = (loggedIn: boolean) => {
+  let user: typeof ADMIN | null = loggedIn ? ADMIN : null;
+  server.use(
+    http.get('/api/auth/me', () =>
+      user ? HttpResponse.json(user) : HttpResponse.json({ status: 401 }, { status: 401 })),
+    http.post('/api/auth/login', async ({ request }) => {
+      const { username, password } = (await request.json()) as { username: string; password: string };
+      if (username !== ADMIN.username || password !== PASSWORD) {
+        return HttpResponse.json({ status: 401 }, { status: 401 });
+      }
+      user = ADMIN;
+      return HttpResponse.json(ADMIN);
+    }),
+    http.post('/api/auth/logout', () => {
+      user = null;
+      return new HttpResponse(null, { status: 204 });
+    }),
+  );
+};
 
 /** Mocks the write endpoints and records the calls in order. */
 const mockWrites = () => {
-  const calls: { path: string; password: string | null; body?: unknown }[] = [];
+  const calls: { path: string; csrf: string | null; password: string | null; body?: unknown }[] = [];
   const record = async (request: Request) => {
     const text = await request.clone().text();
     calls.push({
       path: new URL(request.url).pathname,
-      password: request.headers.get(PASSWORD_HEADER),
+      csrf: request.headers.get(CSRF_HEADER),
+      password: request.headers.get('X-Club-Password'),
       body: text ? JSON.parse(text) : undefined,
     });
   };
   server.use(
-    http.post('/api/check-password', async ({ request }) => {
-      await record(request);
-      return new HttpResponse(null, { status: request.headers.get(PASSWORD_HEADER) === PASSWORD ? 200 : 401 });
-    }),
     http.patch('/api/books/:id/finish', async ({ request }) => {
       await record(request);
       return HttpResponse.json({ ...current, status: 'finished' });
@@ -36,11 +55,14 @@ const mockWrites = () => {
   return calls;
 };
 
-const renderApp = async () => {
+const renderApp = async ({ loggedIn = true } = {}) => {
+  mockAuth(loggedIn);
   const user = userEvent.setup();
   render(<App />);
   // The finished list shows once the books are loaded.
   await screen.findAllByText(finishedHigh.title, { exact: false });
+  // The auth state is known once the login or logout button shows.
+  await screen.findAllByRole('button', { name: loggedIn ? 'Выйти' : 'Войти' });
   return user;
 };
 
@@ -50,11 +72,96 @@ const openSelectionDialog = async (user: ReturnType<typeof userEvent.setup>) => 
 };
 
 describe('App', () => {
+  beforeEach(() => {
+    document.cookie = 'XSRF-TOKEN=tok; path=/';
+  });
+
+  afterEach(() => {
+    document.cookie = 'XSRF-TOKEN=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT';
+  });
+
   it('renders the club page with the loaded books', async () => {
-    await renderApp();
+    await renderApp({ loggedIn: false });
 
     expect(screen.getAllByText('Клуб "НЕЮНЫЙ ЧИТАТЕЛЬ"').length).toBeGreaterThan(0);
     expect(screen.getAllByText(current.title, { exact: false }).length).toBeGreaterThan(0);
+  });
+
+  describe('login', () => {
+    const openLoginDialog = async (user: ReturnType<typeof userEvent.setup>) => {
+      await user.click(screen.getAllByRole('button', { name: 'Войти' })[0]);
+      return screen.findByRole('dialog', { name: /Вход/ });
+    };
+
+    it('hides book selection while logged out', async () => {
+      await renderApp({ loggedIn: false });
+
+      expect(screen.queryByRole('button', { name: 'Выбор книги' })).not.toBeInTheDocument();
+      expect(screen.getAllByRole('button', { name: 'Статистика' }).length).toBeGreaterThan(0);
+    });
+
+    it('logs in and shows book selection', async () => {
+      const user = await renderApp({ loggedIn: false });
+      const dialog = await openLoginDialog(user);
+
+      await user.type(within(dialog).getByLabelText('Логин'), ADMIN.username);
+      await user.type(within(dialog).getByLabelText('Пароль'), PASSWORD);
+      await user.click(within(dialog).getByRole('button', { name: 'Войти' }));
+
+      await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
+      expect(screen.getAllByRole('button', { name: 'Выбор книги' }).length).toBeGreaterThan(0);
+      expect(screen.getAllByRole('button', { name: 'Выйти' }).length).toBeGreaterThan(0);
+    });
+
+    it('shows an error on a wrong password and stays logged out', async () => {
+      const user = await renderApp({ loggedIn: false });
+      const dialog = await openLoginDialog(user);
+
+      await user.type(within(dialog).getByLabelText('Логин'), ADMIN.username);
+      await user.type(within(dialog).getByLabelText('Пароль'), 'wrong');
+      await user.click(within(dialog).getByRole('button', { name: 'Войти' }));
+
+      expect(await within(dialog).findByText('Неверный логин или пароль')).toBeInTheDocument();
+      expect(screen.queryByRole('button', { name: 'Выбор книги' })).not.toBeInTheDocument();
+    });
+
+    it('asks for both fields before calling the backend', async () => {
+      let called = false;
+      const user = await renderApp({ loggedIn: false });
+      server.use(http.post('/api/auth/login', () => {
+        called = true;
+        return HttpResponse.json(ADMIN);
+      }));
+      const dialog = await openLoginDialog(user);
+
+      await user.click(within(dialog).getByRole('button', { name: 'Войти' }));
+
+      expect(within(dialog).getByText('Введите логин и пароль')).toBeInTheDocument();
+      expect(called).toBe(false);
+    });
+
+    it('logs out and hides book selection', async () => {
+      const user = await renderApp();
+
+      await user.click(screen.getAllByRole('button', { name: 'Выйти' })[0]);
+
+      await screen.findAllByRole('button', { name: 'Войти' });
+      expect(screen.queryByRole('button', { name: 'Выбор книги' })).not.toBeInTheDocument();
+    });
+
+    it('shows the select button for no current book only when logged in', async () => {
+      server.use(http.get('/api/books', () => HttpResponse.json(allBooks.filter((b) => b.status !== 'progress'))));
+      const user = await renderApp({ loggedIn: false });
+
+      expect(screen.queryByRole('button', { name: 'Выбрать книгу' })).not.toBeInTheDocument();
+
+      const dialog = await openLoginDialog(user);
+      await user.type(within(dialog).getByLabelText('Логин'), ADMIN.username);
+      await user.type(within(dialog).getByLabelText('Пароль'), PASSWORD);
+      await user.click(within(dialog).getByRole('button', { name: 'Войти' }));
+
+      expect(await screen.findByRole('button', { name: 'Выбрать книгу' })).toBeInTheDocument();
+    });
   });
 
   describe('selection dialog', () => {
@@ -131,51 +238,50 @@ describe('App', () => {
       return { user, approval };
     };
 
-    it('requires a rating from 1 to 10 and the password', async () => {
+    it('requires a rating from 1 to 10 and asks for no password', async () => {
       const calls = mockWrites();
       const { user, approval } = await openApprovalDialog();
-      const [ratingField] = within(approval).getAllByRole('textbox');
       const confirm = within(approval).getByRole('button', { name: 'Подтвердить' });
+
+      expect(within(approval).getAllByRole('textbox')).toHaveLength(1);
+      expect(within(approval).queryByLabelText('Код подтверждения')).not.toBeInTheDocument();
 
       await user.click(confirm);
       expect(within(approval).getByText('Введите оценку от 1 до 10')).toBeInTheDocument();
 
+      const ratingField = within(approval).getByRole('textbox');
       await user.type(ratingField, '0');
       expect(ratingField).toHaveValue('');
       await user.type(ratingField, '11');
       expect(ratingField).toHaveValue('1');
-
-      await user.click(confirm);
-      expect(within(approval).getByText('Введите код подтверждения')).toBeInTheDocument();
       expect(calls).toEqual([]);
     });
 
-    it('shows the wrong-password message and changes nothing', async () => {
+    it('finishes the current book, then starts the chosen one, with the CSRF token', async () => {
       const calls = mockWrites();
       const { user, approval } = await openApprovalDialog();
 
-      await user.type(within(approval).getAllByRole('textbox')[0], '8,5');
-      await user.type(within(approval).getByLabelText('Код подтверждения'), 'wrong');
-      await user.click(within(approval).getByRole('button', { name: 'Подтвердить' }));
-
-      expect(await within(approval).findByText('Неправильный пароль!')).toBeInTheDocument();
-      expect(calls.map((c) => c.path)).toEqual(['/api/check-password']);
-    });
-
-    it('finishes the current book, then starts the chosen one, with the password', async () => {
-      const calls = mockWrites();
-      const { user, approval } = await openApprovalDialog();
-
-      await user.type(within(approval).getAllByRole('textbox')[0], '8,5');
-      await user.type(within(approval).getByLabelText('Код подтверждения'), PASSWORD);
+      await user.type(within(approval).getByRole('textbox'), '8,5');
       await user.click(within(approval).getByRole('button', { name: 'Подтвердить' }));
 
       await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
       expect(calls).toEqual([
-        { path: '/api/check-password', password: PASSWORD, body: undefined },
-        { path: `/api/books/${current.id}/finish`, password: PASSWORD, body: { rating: '8.50' } },
-        { path: `/api/books/${newBoris.id}/start`, password: PASSWORD, body: undefined },
+        { path: `/api/books/${current.id}/finish`, csrf: 'tok', password: null, body: { rating: '8.50' } },
+        { path: `/api/books/${newBoris.id}/start`, csrf: 'tok', password: null, body: undefined },
       ]);
+    });
+
+    it('says the session expired on 401 and hides book selection', async () => {
+      mockWrites();
+      server.use(http.patch('/api/books/:id/finish', () => HttpResponse.json({ status: 401 }, { status: 401 })));
+      const { user, approval } = await openApprovalDialog();
+
+      await user.type(within(approval).getByRole('textbox'), '9');
+      await user.click(within(approval).getByRole('button', { name: 'Подтвердить' }));
+
+      expect(await within(approval).findByText('Сессия истекла. Войдите снова.')).toBeInTheDocument();
+      // hidden: the open dialog makes the app bar aria-hidden
+      expect(screen.queryByRole('button', { name: 'Выбор книги', hidden: true })).not.toBeInTheDocument();
     });
 
     it('shows a generic error when a write fails', async () => {
@@ -183,8 +289,7 @@ describe('App', () => {
       server.use(http.patch('/api/books/:id/start', () => HttpResponse.json({ status: 409 }, { status: 409 })));
       const { user, approval } = await openApprovalDialog();
 
-      await user.type(within(approval).getAllByRole('textbox')[0], '9');
-      await user.type(within(approval).getByLabelText('Код подтверждения'), PASSWORD);
+      await user.type(within(approval).getByRole('textbox'), '9');
       await user.click(within(approval).getByRole('button', { name: 'Подтвердить' }));
 
       expect(await within(approval).findByText('Не удалось сохранить. Попробуйте ещё раз.')).toBeInTheDocument();

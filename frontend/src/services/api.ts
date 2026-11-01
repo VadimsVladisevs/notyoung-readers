@@ -1,7 +1,14 @@
-import { Book, Statistics, CreateBookDto, BookDto, FinishBookDto } from '../types';
+import { Book, Statistics, CreateBookDto, BookDto, FinishBookDto, CurrentUser } from '../types';
 import { API_ROUTES } from '../routes';
 
-export const PASSWORD_HEADER = 'X-Club-Password';
+/** Spring Security's CSRF token: read from this cookie, sent back in this header on every write. */
+export const CSRF_COOKIE = 'XSRF-TOKEN';
+export const CSRF_HEADER = 'X-XSRF-TOKEN';
+
+const readCsrfToken = (): string | undefined => {
+  const cookie = document.cookie.split('; ').find((c) => c.startsWith(`${CSRF_COOKIE}=`));
+  return cookie && decodeURIComponent(cookie.slice(CSRF_COOKIE.length + 1));
+};
 
 /** A non-2xx response. `detail` comes from the backend's ProblemDetail body, if any. */
 export class ApiError extends Error {
@@ -12,13 +19,15 @@ export class ApiError extends Error {
 }
 
 class ApiService {
-  private async request<T>(url: string, options?: RequestInit, password?: string): Promise<T> {
+  private async request<T>(url: string, options?: RequestInit): Promise<T> {
     const headers = new Headers(options?.headers);
     if (options?.body !== undefined) {
       headers.set('Content-Type', 'application/json');
     }
-    if (password !== undefined) {
-      headers.set(PASSWORD_HEADER, password);
+    const method = options?.method ?? 'GET';
+    const csrfToken = readCsrfToken();
+    if (method !== 'GET' && method !== 'HEAD' && csrfToken) {
+      headers.set(CSRF_HEADER, csrfToken);
     }
 
     const response = await fetch(url, { ...options, headers });
@@ -50,25 +59,25 @@ class ApiService {
     return this.request<Book>(API_ROUTES.BOOKS_BY_ID(id));
   }
 
-  async deleteBookById(id: string, password: string): Promise<void> {
-    await this.request<void>(API_ROUTES.BOOKS_BY_ID(id), { method: 'DELETE' }, password);
+  async deleteBookById(id: string): Promise<void> {
+    await this.request<void>(API_ROUTES.BOOKS_BY_ID(id), { method: 'DELETE' });
   }
 
-  async addNewBook(bookDto: CreateBookDto, password: string): Promise<Book> {
+  async addNewBook(bookDto: CreateBookDto): Promise<Book> {
     return this.request<Book>(API_ROUTES.BOOKS_ADD, {
       method: 'POST',
       body: JSON.stringify(bookDto),
-    }, password);
+    });
   }
 
-  async updateBook(id: string, bookDto: BookDto, password: string): Promise<Book> {
+  async updateBook(id: string, bookDto: BookDto): Promise<Book> {
     return this.request<Book>(API_ROUTES.BOOKS_UPDATE(id), {
       method: 'PATCH',
       body: JSON.stringify(bookDto),
-    }, password);
+    });
   }
 
-  async finishBook(id: string, bookDto: FinishBookDto, password: string): Promise<Book> {
+  async finishBook(id: string, bookDto: FinishBookDto): Promise<Book> {
     // Ensure rating is sent as decimal string (e.g., 10 -> "10.00")
     const body = JSON.stringify({
       rating: bookDto.rating.toFixed(2)
@@ -76,23 +85,34 @@ class ApiService {
     return this.request<Book>(API_ROUTES.BOOKS_FINISH(id), {
       method: 'PATCH',
       body,
-    }, password);
+    });
   }
 
-  async startBook(id: string, password: string): Promise<Book> {
+  async startBook(id: string): Promise<Book> {
     return this.request<Book>(API_ROUTES.BOOKS_START(id), {
       method: 'PATCH',
-    }, password);
+    });
   }
 
-  /** true if the club password is right, false on 401. */
-  async checkPassword(password: string): Promise<boolean> {
+  // Auth (server session cookie)
+  async login(username: string, password: string): Promise<CurrentUser> {
+    return this.request<CurrentUser>(API_ROUTES.AUTH_LOGIN, {
+      method: 'POST',
+      body: JSON.stringify({ username, password }),
+    });
+  }
+
+  async logout(): Promise<void> {
+    await this.request<void>(API_ROUTES.AUTH_LOGOUT, { method: 'POST' });
+  }
+
+  /** The logged-in user, or null when logged out (401). Also gives the browser its CSRF cookie. */
+  async me(): Promise<CurrentUser | null> {
     try {
-      await this.request<void>(API_ROUTES.CHECK_PASSWORD, { method: 'POST' }, password);
-      return true;
+      return await this.request<CurrentUser>(API_ROUTES.AUTH_ME);
     } catch (err) {
       if (err instanceof ApiError && err.status === 401) {
-        return false;
+        return null;
       }
       throw err;
     }
@@ -116,12 +136,10 @@ export const apiService = new ApiService();
 // Export individual functions for backwards compatibility
 export const getBooks = () => apiService.getAllBooks();
 export const getBookById = (id: string) => apiService.getBookById(id);
-export const addBook = (book: CreateBookDto, password: string) => apiService.addNewBook(book, password);
-export const startBook = (id: string, password: string) => apiService.startBook(id, password);
-export const finishBook = (id: string, rating: number, password: string) =>
-  apiService.finishBook(id, { rating }, password);
+export const addBook = (book: CreateBookDto) => apiService.addNewBook(book);
+export const startBook = (id: string) => apiService.startBook(id);
+export const finishBook = (id: string, rating: number) => apiService.finishBook(id, { rating });
 export const getRandomBook = (booksId?: string[]) => apiService.getRandomBook(booksId);
 export const getStatistics = () => apiService.getStatistics();
-export const checkPassword = (password: string) => apiService.checkPassword(password);
 
 export default apiService;

@@ -7,6 +7,7 @@ import FinishedBooks from '../finished-books';
 import BookSelectionDialog from '../book-selection-dialog';
 import StatisticsDialog from '../statistics-dialog';
 import ApprovalDialog from '../approval-dialog';
+import LoginDialog from '../login-dialog';
 import Footer from '../footer';
 import { useHomePage } from './home-page.hooks';
 import * as styles from './home-page.styles';
@@ -18,6 +19,8 @@ const HomePage: React.FC = () => {
     currentBook,
     finishedBooks,
     loading,
+    loggedIn,
+    canSelectBook,
     selectionDialogOpen,
     statisticsDialogOpen,
     approvalDialogOpen,
@@ -30,6 +33,10 @@ const HomePage: React.FC = () => {
     handleGetRandomBook,
     handleOpenStatistics,
     handleCloseStatistics,
+    loginDialogOpen,
+    handleOpenLoginDialog,
+    handleCloseLoginDialog,
+    handleLogout,
   } = useHomePage();
 
   return (
@@ -41,8 +48,11 @@ const HomePage: React.FC = () => {
         <CircularProgress color="inherit" />
       </Backdrop>
       <MenuAppBar 
-        onOpenBookSelection={handleOpenSelectionDialog}
-        onOpenStatistics={handleOpenStatistics} 
+        onOpenBookSelection={canSelectBook ? handleOpenSelectionDialog : undefined}
+        onOpenStatistics={handleOpenStatistics}
+        loggedIn={loggedIn}
+        onLogin={handleOpenLoginDialog}
+        onLogout={handleLogout}
       />
       
       <Box sx={styles.contentBoxStyles}>
@@ -52,7 +62,7 @@ const HomePage: React.FC = () => {
         
         <CurrentBook
           book={currentBook}
-          onSelectClick={handleOpenSelectionDialog}
+          onSelectClick={canSelectBook ? handleOpenSelectionDialog : undefined}
         />
         
         <Divider sx={styles.dividerStyles} />
@@ -82,6 +92,11 @@ const HomePage: React.FC = () => {
         onConfirm={handleApprovalConfirm}
         currentBook={currentBook}
         newBook={pendingNewBook}
+      />
+
+      <LoginDialog
+        open={loginDialogOpen}
+        onClose={handleCloseLoginDialog}
       />
     </Box>
   );

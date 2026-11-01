@@ -10,6 +10,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.HttpStatusCode;
 import org.springframework.http.ProblemDetail;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.AccessDeniedException;
+import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -34,10 +36,17 @@ public class ApiExceptionHandler extends ResponseEntityExceptionHandler {
         return ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, ex.getMessage());
     }
 
-    // Reached through SecurityConfiguration's authentication entry point
+    // Wrong login (AuthController), or no login (SecurityConfiguration's authentication entry point)
     @ExceptionHandler(AuthenticationException.class)
     public ProblemDetail handleUnauthorized(AuthenticationException ex) {
-        return ProblemDetail.forStatusAndDetail(HttpStatus.UNAUTHORIZED, "Club password is missing or wrong");
+        String detail = ex instanceof BadCredentialsException ? "Wrong username or password" : "Login required";
+        return ProblemDetail.forStatusAndDetail(HttpStatus.UNAUTHORIZED, detail);
+    }
+
+    // Missing role or CSRF token, through SecurityConfiguration's access denied handler
+    @ExceptionHandler(AccessDeniedException.class)
+    public ProblemDetail handleForbidden(AccessDeniedException ex) {
+        return ProblemDetail.forStatusAndDetail(HttpStatus.FORBIDDEN, "Not allowed");
     }
 
     @ExceptionHandler(InvalidBookStateException.class)

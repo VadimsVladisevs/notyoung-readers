@@ -3,9 +3,8 @@ package org.readersclub.api;
 import org.junit.jupiter.api.Test;
 import org.readersclub.security.SecurityConfiguration;
 import org.readersclub.service.BookService;
-import org.readersclub.service.PasswordService;
+import org.readersclub.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.security.autoconfigure.UserDetailsServiceAutoConfiguration;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
 import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
@@ -18,7 +17,7 @@ import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
-@WebMvcTest(value = BookController.class, excludeAutoConfiguration = UserDetailsServiceAutoConfiguration.class)
+@WebMvcTest(BookController.class)
 @Import(SecurityConfiguration.class)
 class ApiExceptionHandlerTests {
 
@@ -29,7 +28,7 @@ class ApiExceptionHandlerTests {
     private BookService bookService;
 
     @MockitoBean
-    private PasswordService passwordService;
+    private UserRepository userRepository;
 
     @Test
     void unexpectedExceptionReturns500WithoutDetails() throws Exception {

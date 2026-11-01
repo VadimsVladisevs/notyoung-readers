@@ -24,11 +24,21 @@ import { MENU_APP_BAR_CONSTANTS } from './menu-app-bar.constants';
 import * as styles from './menu-app-bar.styles';
 
 export interface MenuAppBarProps {
-  onOpenBookSelection: () => void;
+  /** Omitted when the user may not select a book: the menu item is hidden. */
+  onOpenBookSelection?: () => void;
   onOpenStatistics: () => void;
+  loggedIn: boolean;
+  onLogin: () => void;
+  onLogout: () => void;
 }
 
-const MenuAppBar: React.FC<MenuAppBarProps> = ({ onOpenBookSelection, onOpenStatistics }) => {
+const MenuAppBar: React.FC<MenuAppBarProps> = ({
+  onOpenBookSelection,
+  onOpenStatistics,
+  loggedIn,
+  onLogin,
+  onLogout,
+}) => {
   const { mobileOpen, handleDrawerToggle, handleNavClick, openExternalLink } = useMenuAppBar();
 
   const navItems = [
@@ -54,14 +64,21 @@ const MenuAppBar: React.FC<MenuAppBarProps> = ({ onOpenBookSelection, onOpenStat
             </ListItemButton>
           </ListItem>
         ))}
-        <ListItem disablePadding>
-          <ListItemButton sx={styles.listItemButtonStyles} onClick={onOpenBookSelection}>
-            <ListItemText primary={t('nav.bookSelection')} />
-          </ListItemButton>
-        </ListItem>
+        {onOpenBookSelection && (
+          <ListItem disablePadding>
+            <ListItemButton sx={styles.listItemButtonStyles} onClick={onOpenBookSelection}>
+              <ListItemText primary={t('nav.bookSelection')} />
+            </ListItemButton>
+          </ListItem>
+        )}
         <ListItem disablePadding>
           <ListItemButton sx={styles.listItemButtonStyles} onClick={onOpenStatistics}>
             <ListItemText primary={t('nav.statistics')} />
+          </ListItemButton>
+        </ListItem>
+        <ListItem disablePadding>
+          <ListItemButton sx={styles.listItemButtonStyles} onClick={loggedIn ? onLogout : onLogin}>
+            <ListItemText primary={t(loggedIn ? 'nav.logout' : 'nav.login')} />
           </ListItemButton>
         </ListItem>
       </List>
@@ -118,20 +135,25 @@ const MenuAppBar: React.FC<MenuAppBarProps> = ({ onOpenBookSelection, onOpenStat
                   {item.label}
                 </Button>
               ))}
-              <Button
-                onClick={onOpenBookSelection}
-                sx={styles.bookSelectionButtonStyles}
-              >
-                {t('nav.bookSelection')}
-              </Button>
+              {onOpenBookSelection && (
+                <Button
+                  onClick={onOpenBookSelection}
+                  sx={styles.bookSelectionButtonStyles}
+                >
+                  {t('nav.bookSelection')}
+                </Button>
+              )}
               <Button
                 onClick={onOpenStatistics}
                 sx={styles.statisticsButtonStyles}
               >
                 {t('nav.statistics')}
               </Button>
-              <Button sx={{ my: 2, color: 'white', minWidth: 'auto' }}>
-                {t('nav.contacts')}
+              <Button
+                onClick={loggedIn ? onLogout : onLogin}
+                sx={styles.navButtonStyles}
+              >
+                {t(loggedIn ? 'nav.logout' : 'nav.login')}
               </Button>
               <IconButton
                 color="inherit"
