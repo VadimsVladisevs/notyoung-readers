@@ -17,12 +17,13 @@
 | Run backend against local Mongo | `cd backend && ./mvnw spring-boot:run` → `http://localhost:8080/api/books`. `dev` profile by default; creates login `admin` / `club-secret` (ADMIN) if there's no `admin` user. The local compose data already has `admin` (the real club password, `roles: ["ADMIN"]` added 2026-11-01), so the seed is skipped there |
 | Try a protected write | `curl -c jar -b jar localhost:8080/api/auth/me` (sets `XSRF-TOKEN`), then send the cookie's value as `-H "X-XSRF-TOKEN: <token>"` with `-b jar -c jar` on `POST /api/auth/login` (JSON body) and the write. Without a login → 401, without the token → 403. The session cookie is `Secure`; curl still sends it to `localhost` |
 | Frontend build + tests | `cd frontend && npm run build && npm test` |
-| Run frontend | `npm run dev` → `http://localhost:5173`, `/api` proxied to `:8080`; more in [frontend.md](frontend.md) |
-| App image (frontend + backend + covers) | `docker build -t readers-club .` (repo root, ~2 min cold). Tests don't run inside; run them first |
+| Run frontend | `npm run dev` → `http://localhost:5173`, `/api` and `/images` proxied to `:8080`; more in [frontend.md](frontend.md) |
+| Import covers into a Mongo | `MONGO_URI='mongodb://host.docker.internal:27017' scripts/import-covers.sh [db]` (Git Bash; default db `readersDB`; ~16 s for 163 files; safe to re-run). It prints the file count and any book whose cover is missing. For Atlas the user runs it with their own URI |
+| App image (frontend + backend) | `docker build -t readers-club .` (repo root, ~2 min cold). Tests don't run inside; run them first. Covers aren't in the image: they come from the DB |
 | Run the image against local Mongo | `docker run --rm --memory=512m -p 8090:8080 -e DB_URL=mongodb://host.docker.internal:27017/readersDB readers-club` → `http://localhost:8090`. Log in with an account from `users` (the image runs without `dev`, so there's no seed) |
 | Legacy app | `node app.js` → `http://localhost:3000` (needs `DB_URL` in root `.env`, gitignored) |
 
-When you start the backend in the background, stop it afterwards and check that port 8080 is free. Writes against the local Mongo change real-looking data; prefer read-only checks or tests.
+When you start the backend in the background, stop it afterwards and check that port 8080 is free. For a write check, a temporary ADMIN user in the local `users` with the test hash from `IntegrationTest.PASSWORD_HASH` (`club-secret`) works; delete it afterwards. Git Bash `curl -F file=@…` needs a path curl can open (relative, or `cygpath -m`); a `/c/...` scratchpad path fails with curl error 26 and sends nothing. Writes against the local Mongo change real-looking data; prefer read-only checks or tests.
 
 ## Git
 - Work on `migration/spring-react`; `main` is what production deploys. Commit only when the user asks.

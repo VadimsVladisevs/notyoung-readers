@@ -8,6 +8,11 @@ server:
         same-site: lax
 
 spring:
+  servlet:
+    multipart:
+      # Covers: JPEG up to 2 MB (CoverService.MAX_BYTES)
+      max-file-size: 2MB
+      max-request-size: 3MB
   mongodb:
     uri: ${DB_URL}
     database: ${DB_NAME:readersDB}

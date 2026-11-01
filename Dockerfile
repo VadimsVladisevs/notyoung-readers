@@ -1,4 +1,4 @@
-# One image: Spring Boot serves the API, the built React app and the covers.
+# One image: Spring Boot serves the API and the built React app. Covers come from MongoDB (GridFS).
 # Tests don't run here (Testcontainers needs Docker); run ./mvnw verify and npm test before pushing.
 
 # 1. Frontend
@@ -8,8 +8,6 @@ COPY frontend/package.json frontend/package-lock.json ./
 RUN npm ci
 COPY frontend/ ./
 RUN npm run build
-# Covers stay in the repo-root public/images until cutover (Phase 11) or the move into MongoDB (Phase 10)
-COPY public/images/ dist/images/
 
 # 2. Backend jar with the frontend in static/
 FROM eclipse-temurin:25-jdk AS backend

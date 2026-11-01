@@ -8,6 +8,7 @@ export const API_ROUTES = {
   BOOKS_UPDATE: (id: string) => `${API_BASE}/books/${id}/update`,
   BOOKS_FINISH: (id: string) => `${API_BASE}/books/${id}/finish`,
   BOOKS_START: (id: string) => `${API_BASE}/books/${id}/start`,
+  BOOKS_COVER: (id: string) => `${API_BASE}/books/${id}/cover`,
   BOOKS_RANDOM: `${API_BASE}/books/random`,
   BOOKS_RANDOM_WITH_IDS: (booksId: string[]) => 
     `${API_BASE}/books/random?${booksId.map(id => `booksId=${id}`).join('&')}`,

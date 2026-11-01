@@ -43,6 +43,9 @@ class BookServiceTests {
     @Mock
     private BookValidator bookValidator;
 
+    @Mock
+    private CoverService coverService;
+
     @InjectMocks
     private BookService bookService;
 

@@ -38,7 +38,10 @@ cd frontend
 npm ci
 npm run dev
 ```
-Open `http://localhost:5173`. `/api` is proxied to the backend on `:8080`, and covers come from `public/images/` at the repo root.
+Open `http://localhost:5173`. `/api` and `/images` are proxied to the backend on `:8080`. Covers are stored in MongoDB (GridFS). Load them into the local database once (Git Bash, Docker running; safe to re-run):
+```bash
+MONGO_URI='mongodb://host.docker.internal:27017' scripts/import-covers.sh
+```
 
 ## Tests
 ```bash
@@ -51,7 +54,7 @@ The base config has no defaults. Production sets these env vars: `DB_URL` (Mongo
 
 ## Docker image and staging
 ```bash
-docker build -t readers-club .     # frontend + backend + covers in one image; tests don't run here
+docker build -t readers-club .     # frontend + backend in one image (covers come from the DB); tests don't run here
 docker run --rm -p 8090:8080 -e DB_URL=mongodb://host.docker.internal:27017/readersDB readers-club
 ```
 Staging runs this image on Render (Free) at `https://readers-club-staging.onrender.com`, defined in `render.yaml` and deployed from the `migration/spring-react` branch. It uses `readersDB_staging`, a copy of the prod data, with an Atlas user that can only access that database. The first request after 15 minutes idle wakes the service and is slow.

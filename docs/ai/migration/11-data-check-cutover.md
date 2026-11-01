@@ -5,9 +5,10 @@ Part of [PLAN.md](PLAN.md). Status: ☐ (drafted 2026-11-01 as the old Phase 7; 
 ## Revisit at phase start
 Phases 7–10 change parts of this plan. Re-check every step before starting:
 - **Login (Phase 7, done):** `ADMIN_PASSWORD_HASH` and the `X-Club-Password` header are gone. The app logs in against prod `users`, and the `admin` document needs `roles: ["ADMIN"]` (step 12). Steps 9 and 13 check the login instead of the header.
-- **Images in MongoDB (Phase 10)** moves covers into the DB. Step 4 (move covers to `frontend/public/images`, Dockerfile `COPY`) then changes or drops, and the image import must run on prod `readersDB` before or at cutover.
+- **Images in MongoDB (Phase 10, done in code):** covers are in GridFS; the image has no cover files. Step 4 is now "import covers into prod" (below); the Dockerfile and Vite changes are already done.
 - New collections or indexes from Phases 7–10 get created on prod at cutover. List them here:
   - Phase 7: no new collection. The new field `users.admin.roles` is added in step 12.
+  - Phase 10: GridFS `fs.files` + `fs.chunks`, filled by `scripts/import-covers.sh` (step 4). No `books` change.
 
 ## Goal
 Replace the legacy Node service on Render with the new Docker image. It runs against the same Atlas data, with every write protected on the server, and the legacy files are retired. Checks deferred from Phase 6 come first: the browser walk-through on staging, prod counts unchanged, staging isolation and cold-start timing.
@@ -36,14 +37,9 @@ Replace the legacy Node service on Render with the new Docker image. It runs aga
   
   The counts are the baseline for "prod unchanged".
 - [ ] **3. Isolation check (user):** as `readers-staging`, `use readersDB; db.books.countDocuments()` → `Unauthorized`.
-- [ ] **4. Covers:**
-  - `git mv public/images frontend/public/images`
-  - drop the `COPY public/images/` line from the `Dockerfile` and `!public/images/` from `.dockerignore`
-  - delete the `legacyCovers` plugin and its imports from `frontend/vite.config.ts`
-  
-  *(Probably obsolete after Phase 10.)*
+- [ ] **4. Covers into prod (user), before the switch:** `MONGO_URI='<prod URI, no db path>' scripts/import-covers.sh readersDB`. Expect 163 files (more if covers were added through the legacy app since) and "Books whose cover is missing: 0"; a missing one means a legacy file not in `public/images/`. The legacy app is unaffected (it never reads GridFS). Re-run right before the switch if legacy added books meanwhile.
 - [ ] **5. Delete legacy files:**
-  - `git rm` one by one: `app.js`, `modules/db.js`, `index.html`, `public/css/styles.css`, `public/js/index.js`, `package.json`, `yarn.lock`, `Procfile`
+  - `git rm` one by one: `app.js`, `modules/db.js`, `index.html`, `public/css/styles.css`, `public/js/index.js`, `package.json`, `yarn.lock`, `Procfile`, and the 163 `public/images/*.jpg` after step 4 (they live on in GridFS and on branch `legacy`; `scripts/import-covers.sh` reads them, so delete the script too or point it at the `legacy` branch)
   - `rmdir` the empty dirs
   - keep `.nvmrc`, because the frontend uses it
 - [ ] **6. Docs:**
@@ -52,9 +48,8 @@ Replace the legacy Node service on Render with the new Docker image. It runs aga
   - `update-ai-docs`
 - [ ] **7. Local verify:**
   - `./mvnw verify` and `npm run build && npm test`
-  - `dist/images/` holds all covers (if they're still files)
   - `docker build` + `docker run -p 8090:8080` against compose Mongo
-  - the dev server serves covers
+  - the dev server shows covers (through the backend, from the local GridFS)
 - [ ] **8. Commit** `Phase 11 (part 1): …`. **Push** (confirm first); staging redeploys the final image.
 - [ ] **9. Staging walk-through (user, guided):** every flow, including the ones Phases 7–10 add:
   - browse all lists and the swiper

@@ -21,7 +21,8 @@ export class ApiError extends Error {
 class ApiService {
   private async request<T>(url: string, options?: RequestInit): Promise<T> {
     const headers = new Headers(options?.headers);
-    if (options?.body !== undefined) {
+    // FormData sets its own multipart Content-Type (with the boundary)
+    if (options?.body !== undefined && !(options.body instanceof FormData)) {
       headers.set('Content-Type', 'application/json');
     }
     const method = options?.method ?? 'GET';
@@ -94,6 +95,13 @@ class ApiService {
     });
   }
 
+  /** Uploads a JPEG cover; the backend names it and returns the book with the new `image`. */
+  async uploadCover(id: string, file: File): Promise<Book> {
+    const body = new FormData();
+    body.append('file', file);
+    return this.request<Book>(API_ROUTES.BOOKS_COVER(id), { method: 'PUT', body });
+  }
+
   // Auth (server session cookie)
   async login(username: string, password: string): Promise<CurrentUser> {
     return this.request<CurrentUser>(API_ROUTES.AUTH_LOGIN, {
@@ -139,6 +147,7 @@ export const getBookById = (id: string) => apiService.getBookById(id);
 export const addBook = (book: CreateBookDto) => apiService.addNewBook(book);
 export const editBook = (id: string, book: BookDto) => apiService.updateBook(id, book);
 export const deleteBook = (id: string) => apiService.deleteBookById(id);
+export const uploadCover = (id: string, file: File) => apiService.uploadCover(id, file);
 export const startBook = (id: string) => apiService.startBook(id);
 export const finishBook = (id: string, rating: number) => apiService.finishBook(id, { rating });
 export const getRandomBook = (booksId?: string[]) => apiService.getRandomBook(booksId);

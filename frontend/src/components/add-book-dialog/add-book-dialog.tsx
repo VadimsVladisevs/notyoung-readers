@@ -14,20 +14,26 @@ import {
 import CloseIcon from '@mui/icons-material/Close';
 import { t } from '../../i18n';
 import { CreateBookDto } from '../../types';
+import CoverDropZone from '../cover-drop-zone';
 import { useAddBookDialog } from './add-book-dialog.hooks';
 import * as styles from './add-book-dialog.styles';
 
 export interface AddBookDialogProps {
   open: boolean;
   onClose: () => void;
-  /** Saves the book; throws `ApiError` on failure (401 when the session is gone). */
-  onSubmit: (book: CreateBookDto) => Promise<void>;
+  /**
+   * Saves the book, then uploads the cover if one was chosen. Throws `ApiError` on failure (401 when the
+   * session is gone), or `CoverUploadError` when the book was added but the cover wasn't.
+   */
+  onSubmit: (book: CreateBookDto, cover: File | null) => Promise<void>;
   /** Existing tags (club members), offered as suggestions. */
   tags: string[];
 }
 
 const AddBookDialog: React.FC<AddBookDialogProps> = ({ open, onClose, onSubmit, tags }) => {
-  const { values, missing, error, loading, setField, handleSubmit } = useAddBookDialog(open, onSubmit);
+  const {
+    values, missing, error, loading, saved, cover, setCover, setField, handleSubmit,
+  } = useAddBookDialog(open, onSubmit);
 
   return (
     <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth>
@@ -73,6 +79,7 @@ const AddBookDialog: React.FC<AddBookDialogProps> = ({ open, onClose, onSubmit, 
               onChange={(e) => setField('wiki', e.target.value)}
               error={missing.has('wiki')}
             />
+            <CoverDropZone file={cover} onChange={setCover} />
             {error && <Alert severity="error">{error}</Alert>}
           </Box>
         </DialogContent>
@@ -80,7 +87,7 @@ const AddBookDialog: React.FC<AddBookDialogProps> = ({ open, onClose, onSubmit, 
           <Button onClick={onClose} color="inherit" sx={styles.buttonStyles}>
             {t('dialogs.addBook.cancelButton')}
           </Button>
-          <Button type="submit" variant="contained" color="success" disabled={loading} sx={styles.buttonStyles}>
+          <Button type="submit" variant="contained" color="success" disabled={loading || saved} sx={styles.buttonStyles}>
             {t('dialogs.addBook.submitButton')}
           </Button>
         </DialogActions>

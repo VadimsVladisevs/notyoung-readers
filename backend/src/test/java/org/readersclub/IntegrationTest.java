@@ -43,6 +43,8 @@ public abstract class IntegrationTest {
     @BeforeEach
     void cleanDatabase() {
         bookRepository.deleteAll();
+        mongoTemplate.dropCollection("fs.files");
+        mongoTemplate.dropCollection("fs.chunks");
         mongoTemplate.dropCollection(USERS);
         saveUser(USERNAME, PASSWORD_HASH, List.of("ADMIN"));
     }

@@ -6,10 +6,11 @@
 | Legacy app | repo root: `app.js`, `modules/db.js`, `index.html`, `public/` (jQuery + 163 covers in `public/images/`) | **Production** on Render (Heroku-style `Procfile`), MongoDB Atlas. Frozen until cutover (Phase 11) |
 | Backend | `backend/` | Spring Boot REST API under `/api`. On staging inside the app image (below) |
 | Frontend | `frontend/` | React SPA; calls relative `/api/...` URLs (dev proxy → `:8080`). On staging inside the app image (below) |
-| App image | `Dockerfile`, `.dockerignore` (allow-list), `render.yaml` (repo root) | Node stage builds `frontend/dist` + copies repo-root `public/images` → Maven stage puts it in `static/` and packages the jar → `eclipse-temurin:25-jre`, non-root, JVM flags for 512 MB. Spring serves `/` (`index.html`), `/assets/**`, `/images/**`, `/api/**`, `/actuator/health`. No SPA fallback (no client router). `render.yaml` defines only the **staging** service (`readers-club-staging`, Free, branch `migration/spring-react`, DB `readersDB_staging` with its own Atlas user), live at `https://readers-club-staging.onrender.com` |
+| App image | `Dockerfile`, `.dockerignore` (allow-list), `render.yaml` (repo root) | Node stage builds `frontend/dist` → Maven stage puts it in `static/` and packages the jar → `eclipse-temurin:25-jre`, non-root, JVM flags for 512 MB. **No cover files in the image** (Phase 10). Spring serves `/` (`index.html`), `/assets/**`, `/images/**` (covers from GridFS, `CoverController`), `/api/**`, `/actuator/health`. No SPA fallback (no client router). `render.yaml` defines only the **staging** service (`readers-club-staging`, Free, branch `migration/spring-react`, DB `readersDB_staging` with its own Atlas user), live at `https://readers-club-staging.onrender.com` |
 | Local MongoDB | `compose.yaml` (repo root) | Dev only: `mongo:8.0` on `127.0.0.1:27017`, no auth, volume `readersclub_mongo-data`. Run steps in the root `README.md` |
+| Cover import | `scripts/import-covers.sh` (Git Bash) | Loads repo-root `public/images/*.jpg` into GridFS with `mongofiles` from the `mongo:8.0` image (`--replace`, safe to re-run), then reports books whose cover file is missing. `MONGO_URI` from the env (no database path), database as the first argument (default `readersDB`). Run once per database: local done 2026-11-01; staging and prod by the user |
 
-Target: the app image on Render against the **same Atlas data** (staging in Phase 6 on a copy, `readersDB_staging`; prod at cutover, Phase 11). Atlas runs MongoDB 8.0.36, the same major version as the `mongo:8.0` used by Testcontainers and compose. Until Phase 10, cover images stay files at `images/<name>.jpg`; the book's `image` field holds that relative path.
+Target: the app image on Render against the **same Atlas data** (staging in Phase 6 on a copy, `readersDB_staging`; prod at cutover, Phase 11). Atlas runs MongoDB 8.0.36, the same major version as the `mongo:8.0` used by Testcontainers and compose. Covers live in **GridFS** (Phase 10); the book's `image` field holds the relative path `images/<file>`, which is also the cover's URL. The legacy app reads the same field and serves its own files, so it keeps working on the same data.
 
 ## Data model
 MongoDB database `readersDB`, collection **`books`**, shared with the legacy app. **Keep it compatible with the legacy app:** both apps read and write this collection until cutover, so no schema migration.
@@ -18,7 +19,7 @@ MongoDB database `readersDB`, collection **`books`**, shared with the legacy app
 |---|---|---|
 | `_id` | ObjectId | `Book.id` (String) |
 | `title`, `author`, `tag` | string | Legacy Mongoose declares a unique index on `title`, but **prod has none** (only `_id`, checked Phase 6); the new app creates no indexes |
-| `image` | string | `images/<file>.jpg` (validated when sent). **Missing on books added without a cover** (Phase 8; upload comes in Phase 10); the UI shows a placeholder |
+| `image` | string | `images/<file>`: the GridFS file name, also the cover URL. Legacy covers are `<name>.jpg`; uploads are `<author>-<title>.jpeg`. Set only by the cover upload. **Missing on books without a cover**; the UI shows a placeholder |
 | `status` | string | Lowercase `new` / `progress` / `finished`. Mapped to `BookStatus` by `BookWritingConverter` / `BookStatusReadingConverter` |
 | `wiki` | string | The book's description text shown under the title (not a link). Required on new books; **missing in some legacy docs** |
 | `rating` | number | 1–10 when finished; legacy may store ints → read as `Double` |
@@ -38,6 +39,8 @@ Collection **`users`**, shared with the legacy app: login accounts. Today there 
 
 The new backend only **reads** `users` (no password re-hashing on login). The one writer is the `dev`-profile seed (`DevAdminSeed`).
 
+GridFS bucket **`fs`** (`fs.files` + `fs.chunks`), new in Phase 10: the cover JPEGs. `filename` = the part of `books.image` after `images/`; content type `image/jpeg`. The legacy app never reads it. A cover is deleted when its book is deleted or gets a new cover, unless another book points at the same file.
+
 ## API contract (backend)
 Errors are RFC 9457 `ProblemDetail` (`application/problem+json`): `title`, `status`, `detail`, `instance`. Validation errors add `errors: {field: message}`. Any unexpected exception → 500 with a generic detail; the real message is only logged.
 
@@ -51,11 +54,13 @@ The session cookie is `HttpOnly`, `Secure`, `SameSite=Lax`, and the login change
 |---|---|---|---|
 | `GET /api/books` | `?status=new\|progress\|finished` optional | 200 list | 400 unknown status |
 | `GET /api/books/{id}` | | 200 book | 404 |
-| `POST /api/books/add` | JSON `CreateBookDto`: title, author, tag, wiki required and not blank (stored trimmed); `image` optional | 201 book, status `new` (no `image` field when none was sent) | 400 + `errors` |
+| `POST /api/books/add` | JSON `CreateBookDto`: title, author, tag, wiki required and not blank (stored trimmed). No `image` (ignored if sent; the cover is uploaded separately) | 201 book, status `new`, `image` null | 400 + `errors` |
 | `PATCH /api/books/{id}/update` | JSON `BookDto`, a **full edit**: title, author, tag, wiki required and not blank (stored trimmed); `status` required; `rating` 1–10, required for `finished`, stored as null for any other status. No `image` (ignored if sent; the stored cover is kept) | 200 book | 400 + `errors` (missing rating → `errors.ratingGivenWhenFinished`); 409 `progress` while another book is in progress; 404 |
 | `PATCH /api/books/{id}/start` | | 200 book in `progress` | 409 unless `new`; 404 |
 | `PATCH /api/books/{id}/finish` | JSON `{"rating": 1..10}`, number or numeric string | 200 book in `finished` | 400 + `errors.rating`; 409 unless `progress`; 404 |
-| `DELETE /api/books/{id}` | | 200, **empty body** | 404 |
+| `PUT /api/books/{id}/cover` | multipart, part `file`: a JPEG (`image/jpeg` and bytes starting `FF D8 FF`), ≤ 2 MB | 200 book with `image` = `images/<author>-<title>.jpeg` (transliterated slug, `-2`, `-3`… if another book has the name; regenerated on every upload). The old cover file is deleted | 400 not a JPEG / no `file` part; 413 over 2 MB; 404 |
+| `DELETE /api/books/{id}` | | 200, **empty body**; also deletes the cover file | 404 |
+| `GET /images/{file}` | | 200 `image/jpeg` from GridFS, `Cache-Control: no-cache` + `ETag` (the GridFS file id, new on every upload); 304 on a matching `If-None-Match`. Public (outside `/api`) | 404 ProblemDetail |
 | `GET /api/books/random` | `?booksId=a&booksId=b` optional | 200 random book from the ids; with no ids, from `new` books only | 404 nothing to pick / unknown id |
 | `GET /api/statistics` | | 200 `{"statistics": {tag: count}}`, count of non-`new` books, sorted desc; a tag with only `new` books → 0 | |
 | `POST /api/auth/login` | JSON `{"username", "password"}`, both required | 200 `{"username", "roles": ["ADMIN"]}`, session cookie set | 400 + `errors` blank field; 401 wrong username or password; 403 no CSRF token |

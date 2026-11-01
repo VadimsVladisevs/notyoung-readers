@@ -101,7 +101,7 @@ class BookControllerTests extends IntegrationTest {
     class AddBook {
 
         private static final String VALID_BODY = """
-                {"title": "Title", "author": "Author", "image": "images/cover.jpg", "tag": "tag", "wiki": "https://wiki"}
+                {"title": "Title", "author": "Author", "tag": "tag", "wiki": "https://wiki"}
                 """;
 
         @Test
@@ -142,25 +142,21 @@ class BookControllerTests extends IntegrationTest {
         static Stream<Arguments> invalidBodies() {
             return Stream.of(
                     Arguments.of("title", """
-                            {"author": "Author", "image": "images/cover.jpg", "tag": "tag", "wiki": "w"}"""),
+                            {"author": "Author", "tag": "tag", "wiki": "w"}"""),
                     Arguments.of("title", """
                             {"title": "  ", "author": "Author", "tag": "tag", "wiki": "w"}"""),
                     Arguments.of("author", """
-                            {"title": "Title", "image": "images/cover.jpg", "tag": "tag", "wiki": "w"}"""),
+                            {"title": "Title", "tag": "tag", "wiki": "w"}"""),
                     Arguments.of("author", """
                             {"title": "Title", "author": "", "tag": "tag", "wiki": "w"}"""),
                     Arguments.of("tag", """
                             {"title": "Title", "author": "Author", "tag": " ", "wiki": "w"}"""),
                     Arguments.of("wiki", """
                             {"title": "Title", "author": "Author", "tag": "tag", "wiki": "  "}"""),
-                    Arguments.of("image", """
-                            {"title": "Title", "author": "Author", "image": "", "tag": "tag", "wiki": "w"}"""),
-                    Arguments.of("image", """
-                            {"title": "Title", "author": "Author", "image": "cover.png", "tag": "tag", "wiki": "w"}"""),
                     Arguments.of("tag", """
-                            {"title": "Title", "author": "Author", "image": "images/cover.jpg", "wiki": "w"}"""),
+                            {"title": "Title", "author": "Author", "wiki": "w"}"""),
                     Arguments.of("wiki", """
-                            {"title": "Title", "author": "Author", "image": "images/cover.jpg", "tag": "tag"}""")
+                            {"title": "Title", "author": "Author", "tag": "tag"}""")
             );
         }
 

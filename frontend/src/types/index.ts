@@ -6,7 +6,7 @@ export interface Book {
   updatedAt: string;
   title: string;
   author: string;
-  /** Missing on books added without a cover (until Phase 10 upload). */
+  /** `images/<file>`, also the cover's URL. Missing on books without a cover. */
   image?: string;
   status: BookStatus;
   tag: string;
@@ -21,12 +21,11 @@ export interface Statistics {
 export interface CreateBookDto {
   title: string;
   author: string;
-  image?: string;
   tag: string;
   wiki: string;
 }
 
-/** Full edit of a book; the cover can't be changed here (upload comes in Phase 10). */
+/** Full edit of a book; the cover is uploaded separately (`uploadCover`). */
 export interface BookDto {
   title: string;
   author: string;

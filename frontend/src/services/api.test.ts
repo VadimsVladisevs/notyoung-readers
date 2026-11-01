@@ -1,7 +1,9 @@
 import { http, HttpResponse } from 'msw';
 import { server } from '../test/server';
 import { allBooks, current, newAnna } from '../test/books';
-import { ApiError, CSRF_HEADER, apiService, deleteBook, editBook, finishBook, getBooks, startBook } from './api';
+import {
+  ApiError, CSRF_HEADER, apiService, deleteBook, editBook, finishBook, getBooks, startBook, uploadCover,
+} from './api';
 
 /** Records every request so the test can inspect headers and body. */
 const recordRequests = () => {
@@ -95,6 +97,29 @@ describe('api', () => {
     expect(requests[0].method).toBe('DELETE');
     expect(new URL(requests[0].url).pathname).toBe(`/api/books/${newAnna.id}`);
     expect(requests[0].headers.get(CSRF_HEADER)).toBe('tok');
+  });
+
+  it('uploads the cover as FormData with a PUT and the CSRF token, and no JSON content type', async () => {
+    setCsrfCookie('tok');
+    const book = { ...newAnna, image: 'images/bulgakov-master.jpeg' };
+    // Spy on fetch itself: jsdom's File doesn't survive Node's fetch, so MSW can't read the body back.
+    const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValue(new Response(JSON.stringify(book), { status: 200 }));
+    const file = new File(['jpeg'], 'photo.jpg', { type: 'image/jpeg' });
+
+    try {
+      expect(await uploadCover(newAnna.id, file)).toEqual(book);
+
+      const [url, init] = fetchSpy.mock.calls[0];
+      expect(url).toBe(`/api/books/${newAnna.id}/cover`);
+      expect(init?.method).toBe('PUT');
+      expect((init?.body as FormData).get('file')).toBe(file);
+      const headers = new Headers(init?.headers);
+      expect(headers.get(CSRF_HEADER)).toBe('tok');
+      // The browser sets multipart/form-data with the boundary itself
+      expect(headers.has('Content-Type')).toBe(false);
+    } finally {
+      fetchSpy.mockRestore();
+    }
   });
 
   it('throws ApiError with the status and ProblemDetail detail', async () => {

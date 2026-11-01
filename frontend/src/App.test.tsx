@@ -55,6 +55,29 @@ const mockWrites = () => {
   return calls;
 };
 
+/**
+ * Mocks the cover upload: records each call; answers `status`, with the book on 200. Records headers only:
+ * jsdom's File doesn't survive Node's fetch, so the multipart body is checked in `api.test.ts`.
+ */
+const mockCover = (status = 200) => {
+  const uploads: { path: string; csrf: string | null; multipart: boolean }[] = [];
+  server.use(
+    http.put('/api/books/:id/cover', ({ request, params }) => {
+      uploads.push({
+        path: new URL(request.url).pathname,
+        csrf: request.headers.get(CSRF_HEADER),
+        multipart: request.headers.get('content-type')?.startsWith('multipart/form-data') ?? false,
+      });
+      return status === 200
+        ? HttpResponse.json({ ...current, id: params.id, image: 'images/cover.jpeg' })
+        : HttpResponse.json({ status }, { status });
+    }),
+  );
+  return uploads;
+};
+
+const jpeg = () => new File([new Uint8Array([0xff, 0xd8, 0xff])], 'photo.jpg', { type: 'image/jpeg' });
+
 const renderApp = async ({ loggedIn = true, account = ADMIN } = {}) => {
   mockAuth(loggedIn, account);
   const user = userEvent.setup();
@@ -394,6 +417,38 @@ describe('App', () => {
 
       expect(await within(dialog).findByText('Не удалось сохранить. Попробуйте ещё раз.')).toBeInTheDocument();
     });
+
+    it('uploads the chosen cover as multipart after adding the book', async () => {
+      const bodies = mockAdd();
+      const uploads = mockCover();
+      const user = await renderApp();
+      const dialog = await openAddDialog(user);
+
+      await fill(user, dialog, NEW_BOOK);
+      await user.upload(within(dialog).getByLabelText('Файл обложки'), jpeg());
+      expect(within(dialog).getByRole('img', { name: 'Обложка' })).toHaveAttribute('src', expect.stringMatching(/^blob:/));
+      await user.click(within(dialog).getByRole('button', { name: 'Добавить' }));
+
+      await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
+      expect(bodies).toHaveLength(1);
+      expect(uploads).toEqual([{ path: '/api/books/a1/cover', csrf: 'tok', multipart: true }]);
+    });
+
+    it('keeps the added book and blocks a second add when the cover upload fails', async () => {
+      const bodies = mockAdd();
+      mockCover(500);
+      const user = await renderApp();
+      const dialog = await openAddDialog(user);
+
+      await fill(user, dialog, NEW_BOOK);
+      await user.upload(within(dialog).getByLabelText('Файл обложки'), jpeg());
+      await user.click(within(dialog).getByRole('button', { name: 'Добавить' }));
+
+      expect(await within(dialog).findByText(/Книга добавлена, но обложку загрузить не удалось/)).toBeInTheDocument();
+      expect(within(dialog).getByRole('button', { name: 'Добавить' })).toBeDisabled();
+      expect(bodies).toHaveLength(1);
+      expect((await screen.findAllByRole('img', { name: 'Вий', hidden: true })).length).toBeGreaterThan(0);
+    });
   });
 
   describe('edit book', () => {
@@ -532,6 +587,35 @@ describe('App', () => {
 
       expect(await within(dialog).findByText('Сессия истекла. Войдите снова.')).toBeInTheDocument();
       expect(screen.queryAllByRole('button', { name: /^Изменить/, hidden: true })).toHaveLength(0);
+    });
+
+    it('shows the current cover and uploads a new one after saving', async () => {
+      const calls = mockEdit();
+      const uploads = mockCover();
+      const user = await renderApp();
+      const dialog = await openEditDialog(user, newAnna.title);
+
+      expect(within(dialog).getByRole('img', { name: 'Обложка' }))
+        .toHaveAttribute('src', `images/${newAnna.id}.jpg?v=${encodeURIComponent(newAnna.updatedAt)}`);
+      await user.upload(within(dialog).getByLabelText('Файл обложки'), jpeg());
+      await user.click(within(dialog).getByRole('button', { name: 'Сохранить' }));
+
+      await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
+      expect(calls.map((c) => c.method)).toEqual(['PATCH']);
+      expect(uploads).toEqual([{ path: `/api/books/${newAnna.id}/cover`, csrf: 'tok', multipart: true }]);
+    });
+
+    it('says the edit was saved when the cover upload fails', async () => {
+      const calls = mockEdit();
+      mockCover(400);
+      const user = await renderApp();
+      const dialog = await openEditDialog(user, newAnna.title);
+
+      await user.upload(within(dialog).getByLabelText('Файл обложки'), jpeg());
+      await user.click(within(dialog).getByRole('button', { name: 'Сохранить' }));
+
+      expect(await within(dialog).findByText(/Изменения сохранены, но обложку загрузить не удалось/)).toBeInTheDocument();
+      expect(calls).toHaveLength(1);
     });
 
     it('deletes only after the confirmation', async () => {

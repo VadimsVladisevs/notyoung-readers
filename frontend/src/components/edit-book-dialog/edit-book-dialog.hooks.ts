@@ -3,6 +3,7 @@ import { t } from '../../i18n';
 import { ApiError } from '../../services/api';
 import { Book, BookDto, BookStatus } from '../../types';
 import { parseRating } from '../approval-dialog/approval-dialog.hooks';
+import { CoverUploadError } from '../../utils/cover';
 
 type TextField = 'title' | 'author' | 'tag' | 'wiki';
 const TEXT_FIELDS: TextField[] = ['title', 'author', 'tag', 'wiki'];
@@ -22,6 +23,7 @@ const fromBook = (book: Book): Values => ({
 });
 
 const errorMessage = (err: unknown): string => {
+  if (err instanceof CoverUploadError) return t('dialogs.cover.uploadFailedEdit');
   const status = err instanceof ApiError ? err.status : undefined;
   if (status === 401) return t('dialogs.addBook.sessionExpired');
   if (status === 409) return t('dialogs.editBook.inProgressConflict');
@@ -30,7 +32,7 @@ const errorMessage = (err: unknown): string => {
 
 export const useEditBookDialog = (
   book: Book | null,
-  onSubmit: (book: BookDto) => Promise<void>,
+  onSubmit: (book: BookDto, cover: File | null) => Promise<void>,
   onDelete: () => Promise<void>
 ) => {
   const [values, setValues] = useState<Values | null>(null);
@@ -38,6 +40,7 @@ export const useEditBookDialog = (
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [confirmingDelete, setConfirmingDelete] = useState(false);
+  const [cover, setCover] = useState<File | null>(null);
 
   // Fill the form when a book is opened; keep the values while the dialog closes.
   useEffect(() => {
@@ -46,6 +49,7 @@ export const useEditBookDialog = (
       setMissing(new Set());
       setError(null);
       setConfirmingDelete(false);
+      setCover(null);
     }
   }, [book]);
 
@@ -90,8 +94,8 @@ export const useEditBookDialog = (
       wiki: values.wiki.trim(),
       status: values.status,
       ...(finished && rating !== null ? { rating } : {}),
-    }));
-  }, [values, onSubmit, run]);
+    }, cover));
+  }, [values, cover, onSubmit, run]);
 
   const handleDelete = useCallback(() => run(onDelete), [onDelete, run]);
 
@@ -102,6 +106,8 @@ export const useEditBookDialog = (
     loading,
     confirmingDelete,
     setConfirmingDelete,
+    cover,
+    setCover,
     setField,
     handleSubmit,
     handleDelete,

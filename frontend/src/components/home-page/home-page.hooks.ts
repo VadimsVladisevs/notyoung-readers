@@ -3,6 +3,16 @@ import { useBooksContext } from '../../context/books-context';
 import { useAuthContext } from '../../context/auth-context';
 import { Book, BookDto, CreateBookDto } from '../../types';
 import * as api from '../../services/api';
+import { CoverUploadError } from '../../utils/cover';
+
+/** Uploads the cover of a saved book. A 401 stays an `ApiError`; any other failure becomes `CoverUploadError`. */
+const uploadCover = async (id: string, cover: File) => {
+  try {
+    await api.uploadCover(id, cover);
+  } catch (err) {
+    throw err instanceof api.ApiError && err.status === 401 ? err : new CoverUploadError();
+  }
+};
 
 export const useHomePage = () => {
   const {
@@ -92,12 +102,19 @@ export const useHomePage = () => {
     setAddBookDialogOpen(false);
   }, []);
 
-  const handleAddBook = useCallback(async (book: CreateBookDto) => {
+  const handleAddBook = useCallback(async (book: CreateBookDto, cover: File | null) => {
     try {
-      await api.addBook(book);
+      const added = await api.addBook(book);
+      if (cover) {
+        await uploadCover(added.id, cover);
+      }
     } catch (err) {
       if (err instanceof api.ApiError && err.status === 401) {
         sessionExpired();
+      }
+      if (err instanceof CoverUploadError) {
+        // The book was added; show it
+        await refreshBooks();
       }
       throw err;
     }
@@ -122,6 +139,10 @@ export const useHomePage = () => {
       if (err instanceof api.ApiError && err.status === 401) {
         sessionExpired();
       }
+      if (err instanceof CoverUploadError) {
+        // The edit was saved; show it
+        await refreshBooks();
+      }
       throw err;
     }
     await refreshBooks();
@@ -129,7 +150,12 @@ export const useHomePage = () => {
   }, [editingBook, refreshBooks, sessionExpired]);
 
   const handleEditBook = useCallback(
-    (book: BookDto) => writeEditingBook((id) => api.editBook(id, book)),
+    (book: BookDto, cover: File | null) => writeEditingBook(async (id) => {
+      await api.editBook(id, book);
+      if (cover) {
+        await uploadCover(id, cover);
+      }
+    }),
     [writeEditingBook]
   );
 

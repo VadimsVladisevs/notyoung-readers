@@ -25,6 +25,7 @@ public class BookService {
 
     private final BookRepository bookRepository;
     private final BookValidator bookValidator;
+    private final CoverService coverService;
 
     public List<Book> getAllBooks() {
         return bookRepository.findAll();
@@ -47,6 +48,7 @@ public class BookService {
 
     public void deleteBookById(String id) {
         Book book = getBookById(id);
+        coverService.deleteCover(book);
         bookRepository.deleteById(id);
     }
 
@@ -57,7 +59,6 @@ public class BookService {
                 .tag(bookDto.tag().strip())
                 .status(BookStatus.NEW)
                 .wiki(bookDto.wiki().strip())
-                .image(bookDto.image())
                 .build());
     }
 

@@ -3,6 +3,8 @@ package org.readersclub.api;
 import lombok.extern.slf4j.Slf4j;
 import org.readersclub.exception.BookNotFoundException;
 import org.readersclub.exception.BookStatusNotFoundException;
+import org.readersclub.exception.CoverNotFoundException;
+import org.readersclub.exception.InvalidCoverException;
 import org.readersclub.exception.InvalidBookStateException;
 import org.readersclub.exception.NoBooksFoundException;
 import org.springframework.http.HttpHeaders;
@@ -26,12 +28,12 @@ import java.util.Map;
 @RestControllerAdvice
 public class ApiExceptionHandler extends ResponseEntityExceptionHandler {
 
-    @ExceptionHandler({BookNotFoundException.class, NoBooksFoundException.class})
+    @ExceptionHandler({BookNotFoundException.class, NoBooksFoundException.class, CoverNotFoundException.class})
     public ProblemDetail handleNotFound(RuntimeException ex) {
         return ProblemDetail.forStatusAndDetail(HttpStatus.NOT_FOUND, ex.getMessage());
     }
 
-    @ExceptionHandler(BookStatusNotFoundException.class)
+    @ExceptionHandler({BookStatusNotFoundException.class, InvalidCoverException.class})
     public ProblemDetail handleBadRequest(RuntimeException ex) {
         return ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, ex.getMessage());
     }

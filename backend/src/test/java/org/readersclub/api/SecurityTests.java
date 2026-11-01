@@ -8,9 +8,11 @@ import org.readersclub.IntegrationTest;
 import org.readersclub.model.Book;
 import org.readersclub.model.BookStatus;
 import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpMethod;
 import org.springframework.http.MediaType;
 import org.springframework.mock.web.MockHttpSession;
-import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder;
+import org.springframework.mock.web.MockMultipartFile;
+import org.springframework.test.web.servlet.request.AbstractMockHttpServletRequestBuilder;
 
 import java.util.List;
 import java.util.function.Function;
@@ -25,7 +27,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 class SecurityTests extends IntegrationTest {
 
     private static final String VALID_BODY = """
-            {"title": "t", "author": "a", "image": "images/i.jpg", "tag": "x", "wiki": "w"}
+            {"title": "t", "author": "a", "tag": "x", "wiki": "w"}
             """;
 
     private static final String EDIT_BODY = """
@@ -33,12 +35,14 @@ class SecurityTests extends IntegrationTest {
             """;
 
     private static Stream<Arguments> writeRequests() {
-        return Stream.<Function<String, MockHttpServletRequestBuilder>>of(
+        return Stream.<Function<String, AbstractMockHttpServletRequestBuilder<?>>>of(
                 id -> post("/api/books/add").contentType(MediaType.APPLICATION_JSON).content(VALID_BODY),
                 id -> patch("/api/books/{id}/update", id).contentType(MediaType.APPLICATION_JSON).content(EDIT_BODY),
                 id -> patch("/api/books/{id}/start", id),
                 id -> patch("/api/books/{id}/finish", id).contentType(MediaType.APPLICATION_JSON).content("{\"rating\": 5}"),
-                id -> delete("/api/books/{id}", id)
+                id -> delete("/api/books/{id}", id),
+                id -> multipart(HttpMethod.PUT, "/api/books/{id}/cover", id)
+                        .file(new MockMultipartFile("file", "c.jpg", MediaType.IMAGE_JPEG_VALUE, new byte[]{(byte) 0xFF, (byte) 0xD8, (byte) 0xFF}))
         ).map(Arguments::of);
     }
 
@@ -51,7 +55,7 @@ class SecurityTests extends IntegrationTest {
 
     @ParameterizedTest
     @MethodSource("writeRequests")
-    void anonymousWriteReturns401AndChangesNothing(Function<String, MockHttpServletRequestBuilder> request) throws Exception {
+    void anonymousWriteReturns401AndChangesNothing(Function<String, AbstractMockHttpServletRequestBuilder<?>> request) throws Exception {
         Book book = bookRepository.save(createDefaultBook(BookStatus.NEW));
 
         mockMvc.perform(request.apply(book.getId()).with(csrf()))
@@ -65,7 +69,7 @@ class SecurityTests extends IntegrationTest {
 
     @ParameterizedTest
     @MethodSource("writeRequests")
-    void loggedInWriteWithoutCsrfTokenReturns403(Function<String, MockHttpServletRequestBuilder> request) throws Exception {
+    void loggedInWriteWithoutCsrfTokenReturns403(Function<String, AbstractMockHttpServletRequestBuilder<?>> request) throws Exception {
         Book book = bookRepository.save(createDefaultBook(BookStatus.NEW));
         MockHttpSession session = login(USERNAME, PASSWORD);
 
@@ -79,7 +83,7 @@ class SecurityTests extends IntegrationTest {
 
     @ParameterizedTest
     @MethodSource("writeRequests")
-    void userWithoutAdminRoleGets403(Function<String, MockHttpServletRequestBuilder> request) throws Exception {
+    void userWithoutAdminRoleGets403(Function<String, AbstractMockHttpServletRequestBuilder<?>> request) throws Exception {
         Book book = bookRepository.save(createDefaultBook(BookStatus.NEW));
         saveUser("reader", PASSWORD_HASH, List.of());
         MockHttpSession session = login("reader", PASSWORD);

@@ -16,6 +16,8 @@ import {
 import CloseIcon from '@mui/icons-material/Close';
 import { t } from '../../i18n';
 import { Book, BookDto, BookStatus } from '../../types';
+import CoverDropZone from '../cover-drop-zone';
+import { coverSrc } from '../../utils/cover';
 import { useEditBookDialog } from './edit-book-dialog.hooks';
 import * as styles from './edit-book-dialog.styles';
 
@@ -29,8 +31,11 @@ export interface EditBookDialogProps {
   /** The book being edited; `null` closes the dialog. */
   book: Book | null;
   onClose: () => void;
-  /** Saves the edit; throws `ApiError` on failure (401 session gone, 409 another book in progress). */
-  onSubmit: (book: BookDto) => Promise<void>;
+  /**
+   * Saves the edit, then uploads the cover if a new one was chosen. Throws `ApiError` on failure (401 session
+   * gone, 409 another book in progress), or `CoverUploadError` when the edit was saved but the cover wasn't.
+   */
+  onSubmit: (book: BookDto, cover: File | null) => Promise<void>;
   /** Deletes the book; throws `ApiError` on failure. */
   onDelete: () => Promise<void>;
   /** Existing tags (club members), offered as suggestions. */
@@ -39,7 +44,8 @@ export interface EditBookDialogProps {
 
 const EditBookDialog: React.FC<EditBookDialogProps> = ({ book, onClose, onSubmit, onDelete, tags }) => {
   const {
-    values, missing, error, loading, confirmingDelete, setConfirmingDelete, setField, handleSubmit, handleDelete,
+    values, missing, error, loading, confirmingDelete, setConfirmingDelete, cover, setCover, setField, handleSubmit,
+    handleDelete,
   } = useEditBookDialog(book, onSubmit, onDelete);
 
   return (
@@ -106,6 +112,11 @@ const EditBookDialog: React.FC<EditBookDialogProps> = ({ book, onClose, onSubmit
                   slotProps={{ htmlInput: { inputMode: 'decimal' } }}
                 />
               )}
+              <CoverDropZone
+                file={cover}
+                currentSrc={book?.image ? coverSrc(book) : undefined}
+                onChange={setCover}
+              />
               {error && <Alert severity="error">{error}</Alert>}
             </Box>
           </DialogContent>
