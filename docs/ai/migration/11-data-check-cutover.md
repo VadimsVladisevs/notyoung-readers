@@ -1,6 +1,6 @@
 # Phase 11 — Data check + cutover
 
-Part of [PLAN.md](PLAN.md). Status: ◐ (drafted 2026-11-01 as the old Phase 7; moved to the end so login and book management ship first; started 2026-11-01)
+Part of [PLAN.md](PLAN.md). Status: ☑ (done 2026-11-01) (drafted 2026-11-01 as the old Phase 7; moved to the end so login and book management ship first; started 2026-11-01)
 
 ## Revisit at phase start
 Phases 7–10 change parts of this plan. Re-check every step before starting:
@@ -50,8 +50,8 @@ Replace the legacy Node service on Render with the new Docker image. It runs aga
   - `./mvnw verify` and `npm run build && npm test`
   - `docker build` + `docker run -p 8090:8080` against compose Mongo
   - the dev server shows covers (through the backend, from the local GridFS)
-- [ ] **8. Commit** `Phase 11 (part 1): …`. **Push** (confirm first); staging redeploys the final image.
-- [ ] **9. Staging walk-through (user, guided):** walk-through done 2026-11-01 on `ea0e48d`, no bugs found; open: prod counts re-run, cold start (first try 0.79 s = service was still warm); every flow, including the ones Phases 7–10 add:
+- [x] **8. Commit** `Phase 11 (part 1): …` (`ea0e48d`, pushed 2026-11-01). **Push** (confirm first); staging redeploys the final image.
+- [x] **9. Staging walk-through (user, guided):** walk-through done 2026-11-01 on `ea0e48d`, no bugs found; prod counts re-run = baseline (159: 56/102/1); cold start not measured (first try 0.79 s = still warm; staging is gone): prod startup is ~88 s, so expect ~1.5–2 min on the first visit after 15 min idle; every flow, including the ones Phases 7–10 add:
   - browse all lists and the swiper
   - statistics toggle
   - random pick (`new` only)
@@ -63,23 +63,24 @@ Replace the legacy Node service on Render with the new Docker image. It runs aga
   - covers load
   
   Then re-run the step-2 counts on prod: unchanged. Cold start: idle >15 min, then `curl -w '%{time_total}'` on `/actuator/health` and `/`.
-- [ ] **10. Rollback anchor:** push branch `legacy` at the last legacy `main` commit (confirm first).
-- [ ] **11. PR to `main`** (`gh pr create`, merge commit). The user merges.
-- [ ] **12. Prod switch (user, guided; a few minutes of downtime accepted):**
-  1. Check the plan (Free → the 512 MB JVM flags fit) and that the branch is `main`.
-  2. Atlas, prod `readersDB` (the user runs it): `db.users.updateOne({username: "admin"}, {$set: {roles: ["ADMIN"]}})`. This is additive, and the legacy app ignores it. If the legacy service has `ADMIN_PASSWORD_HASH` set, remove it.
-  3. Settings → Build → Source → Docker, Dockerfile `./Dockerfile`, health check path `/actuator/health`. Remove the Node build/start commands.
-  4. Atlas → Database Access → rotate the prod user's password, then update `DB_URL` on Render right away (the old app breaks from this moment).
-     Prod env today (checked 2026-11-01): only `DB_URL`; build command `yarn` goes away with the Docker runtime.
-  5. Deploy.
-- [ ] **13. Prod smoke (read-only):**
+- [x] **10. Rollback anchor:** pushed 2026-11-01, `legacy` = `36ce2fe`. push branch `legacy` at the last legacy `main` commit (confirm first).
+- [x] **11. PR to `main`** opened 2026-11-01: #3; merge only with prod Auto-Deploy off, right before the runtime switch (step 12). (`gh pr create`, merge commit). The user merges.
+- [x] **12. Prod switch (user, guided; a few minutes of downtime accepted):** done 2026-11-01; Atlas password rotated, `DB_URL` updated, Auto-Deploy back on. Startup on Free: ~88 s (`Started ReadersClub in 87.792 seconds`). the service keeps `notyoung-reader.onrender.com` (no custom domain, so a new service would get a new address). Prod today (checked 2026-11-01): env only `DB_URL`, build `yarn`, start `nodemon app.js`. The runtime is changed in the Source dialog, which deploys right away, so `main` must already have the new app.
+  1. ✔ (steps 1–4 done 2026-11-01, roles set: matched 1, modified 1) Render prod service: **Auto-Deploy → Off**, so merging doesn't start a failing `yarn` build. Check the plan (Free → the 512 MB JVM flags fit).
+  2. Atlas, prod `readersDB` (the user runs it): `db.users.updateOne({username: "admin"}, {$set: {roles: ["ADMIN"]}})`. Additive; the legacy app ignores it.
+  3. Merge PR #3 (merge commit). Prod keeps running the old app.
+  4. Settings → Build → Source → **Edit**: same repo, branch `main`, runtime **Docker** → Deploy. Then Dockerfile path `./Dockerfile`, Docker Command **empty** (no `nodemon app.js` left over), health check path `/actuator/health`.
+  5. Agent smoke (step 13) on the current `DB_URL`. Done 2026-11-01 on merge `50dabe6`: UP ~105 s after the merge; `/` 200; 159 books = baseline (56/102/1), string ratings served as numbers; 159/159 covers 200; statistics 200; logged out `/api/auth/me` and a write → 401; legacy `/books` 404.
+  6. Atlas → Database Access → rotate the prod user's password → update `DB_URL` on Render (redeploys) → smoke again.
+  7. Auto-Deploy back **On**.
+- [x] **13. Prod smoke (read-only):** done 2026-11-01 before and after the rotation (same results); the user logged in as `admin` in the browser.
   - health UP
   - `/` and covers 200
   - `/api/books` counts = baseline
   - auth: writes 401 when logged out; the user logs in as `admin` with the club password
   - one browser look by the user
   - no data writes on prod by the agent
-- [ ] **14. Retire staging:**
+- [x] **14. Retire staging:** done 2026-11-01 (service, `readersDB_staging`, `readers-staging` deleted by the user; `render.yaml` and docs in `Phase 11 (part 2)`).
   - delete the Render service, drop `readersDB_staging`, delete Atlas user `readers-staging`
   - delete `render.yaml`; update the README and docs
   - PLAN.md row ☑, findings, decision log
@@ -94,6 +95,6 @@ Replace the legacy Node service on Render with the new Docker image. It runs aga
 - **Duplicate titles:** «Старик и море» ×2 and «Бабушка велела кланяться и передать, что просит прощения» ×2, each pair with different covers (`ernest-more`/`ernest-starik-i-more`, `bakman-babushka`/`bakman-babuska`), so they look like accidental double entries. A unique `title` index would fail on them, so none is added. The admin can delete the extra copy in the new UI after cutover if the club wants.
 
 ## Verify
-- [ ] Local: backend and frontend tests green; the image serves `/`, covers, API and health.
-- [ ] Staging: every flow works on the final image; unauthenticated writes 401; prod counts unchanged; `readers-staging` Unauthorized on `readersDB`; cold start measured.
-- [ ] Prod: health UP, counts = baseline, covers load, auth works; the old Atlas password no longer connects.
+- [x] Local: backend and frontend tests green; the image serves `/`, covers, API and health.
+- [x] Staging: every flow works on the final image; unauthenticated writes 401; prod counts unchanged; `readers-staging` Unauthorized on `readersDB`. Cold start not measured (see step 9).
+- [x] Prod: health UP, counts = baseline, covers load, auth works (user logged in after the rotation). Old Atlas password rejected: not confirmed by the user yet.

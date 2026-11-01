@@ -25,9 +25,9 @@
 When you start the backend in the background, stop it afterwards and check that port 8080 is free. For a write check, a temporary ADMIN user in the local `users` with the test hash from `IntegrationTest.PASSWORD_HASH` (`club-secret`) works; delete it afterwards. Git Bash `curl -F file=@…` needs a path curl can open (relative, or `cygpath -m`); a `/c/...` scratchpad path fails with curl error 26 and sends nothing. Writes against the local Mongo change real-looking data; prefer read-only checks or tests.
 
 ## Git
-- Work on `migration/spring-react`; `main` is what production deploys. Commit only when the user asks.
+- `main` is production: every push to it deploys on Render (auto-deploy). Work on a short branch and open a PR to `main`. Commit only when the user asks.
 - Commit subject: `Phase N (part k): <summary>` for plan work; body lists the changes as bullets.
-- Never commit secrets (`.env*` is ignored). The Atlas password in an old local file is live and gets rotated at cutover.
+- Never commit secrets (`.env*` is ignored). The Atlas password was rotated at cutover (2026-11-01); the one in old local files is dead.
 - Deleting directories: remove files one by one, then `rmdir` the empty directory. No recursive force-delete.
 
 ## Migration plan upkeep
