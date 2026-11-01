@@ -3,7 +3,7 @@
 Website of a book club ("НЕЮНЫЙ ЧИТАТЕЛЬ"): the books the club plans to read, is reading and has finished, plus per-tag statistics. Changes need a login (one shared club account, role ADMIN).
 
 ## Where things are
-- **Branch `migration/spring-react`:** the Node.js → Spring Boot + React migration is in progress. The plan and its current phase are in `docs/ai/migration/PLAN.md`.
+- **Production:** `main` deploys to Render (`notyoung-reader.onrender.com`) on every push. The finished Node.js → Spring Boot + React migration is recorded in `docs/ai/migration/PLAN.md`.
 - **Branch `legacy`:** the old Express app, kept only as the prod rollback. Don't change it.
 - **`backend/`**: Spring Boot 4 + Java 25 + MongoDB. **`frontend/`**: React + TypeScript + MUI.
 

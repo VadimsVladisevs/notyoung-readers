@@ -29,7 +29,7 @@ Spring Boot 4.1 (Spring Framework 7, Jackson 3), Java 25 (Temurin), Maven wrappe
 |---|---|---|
 | `DB_URL` | `spring.mongodb.uri` | Boot 4 prefix is `spring.mongodb.*`, **not** `spring.data.mongodb.*` |
 | `PORT` | `server.port` | Default 8080 |
-| `DB_NAME` | `spring.mongodb.database` | Default `readersDB`. Wins over a database path in `DB_URL`. Staging sets `readersDB_staging` |
+| `DB_NAME` | `spring.mongodb.database` | Default `readersDB`. Wins over a database path in `DB_URL`. Prod leaves it unset |
 
 Actuator exposes **only** `/actuator/health`, status without details (`{"status":"UP"}`); public, because security only guards `/api/**`. Render's health check uses it. `ActuatorTests` keeps the other endpoints hidden.
 

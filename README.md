@@ -55,9 +55,8 @@ The base config has no defaults. Production sets these env vars: `DB_URL` (Mongo
 - **Data:** MongoDB Atlas, database `readersDB`: `books`, `users`, and the covers in GridFS.
 - **Rollback:** the branch `legacy` holds the old Node.js app. In Render, set runtime Node, build `yarn install`, start `node app.js`, branch `legacy`. It reads the same `books` data and ignores GridFS and `roles`, but it serves covers only from its own files, so covers added in the new app don't show there. The Atlas password was rotated at cutover, so `DB_URL` stays the current one.
 
-## Docker image and staging
+## Docker image
 ```bash
 docker build -t readers-club .     # frontend + backend in one image (covers come from the DB); tests don't run here
 docker run --rm -p 8090:8080 -e DB_URL=mongodb://host.docker.internal:27017/readersDB readers-club
 ```
-Staging runs this image on Render (Free) at `https://readers-club-staging.onrender.com`, defined in `render.yaml` and deployed from the `migration/spring-react` branch. It uses `readersDB_staging`, a copy of the prod data, with an Atlas user that can only access that database. The first request after 15 minutes idle wakes the service and is slow.
