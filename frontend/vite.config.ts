@@ -4,8 +4,8 @@ import { resolve, sep } from 'node:path';
 import { defineConfig, type Plugin } from 'vite';
 import react from '@vitejs/plugin-react';
 
-// Dev only: covers stay in the repo-root public/images/ until cutover (Phase 7),
-// when they move to frontend/public/images/ and this plugin is deleted.
+// Dev only: covers stay in the repo-root public/images/ until they move (Phase 10 images in MongoDB, or cutover in Phase 11),
+// then this plugin is deleted.
 const legacyCovers = (): Plugin => {
   const dir = resolve(import.meta.dirname, '../public/images');
   return {

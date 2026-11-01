@@ -24,7 +24,7 @@ Main flows: library swiper of all books → selection dialog (`new` books; searc
 
 ## Dev setup
 - `vite.config.ts` proxies `/api` → `http://localhost:8080`.
-- Covers: a dev-only plugin (`legacyCovers`) serves the repo-root `public/images/` at `/images` (the `image` field is a relative `images/<file>.jpg`). Delete it at cutover (Phase 7), when the images move to `frontend/public/images/`. `vite build` doesn't include covers.
+- Covers: a dev-only plugin (`legacyCovers`) serves the repo-root `public/images/` at `/images` (the `image` field is a relative `images/<file>.jpg`). Delete it when the covers move (Phase 10 into MongoDB, or `frontend/public/images/` at cutover in Phase 11). `vite build` doesn't include covers.
 - `index.html` lives in `frontend/` (Vite entry); `public/` holds `manifest.json` and `robots.txt`.
 
 ## Tests

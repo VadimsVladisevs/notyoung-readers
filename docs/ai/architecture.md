@@ -3,13 +3,13 @@
 ## The pieces
 | Part | Where | Status |
 |---|---|---|
-| Legacy app | repo root: `app.js`, `modules/db.js`, `index.html`, `public/` (jQuery + 163 covers in `public/images/`) | **Production** on Render (Heroku-style `Procfile`), MongoDB Atlas. Frozen until cutover (Phase 7) |
+| Legacy app | repo root: `app.js`, `modules/db.js`, `index.html`, `public/` (jQuery + 163 covers in `public/images/`) | **Production** on Render (Heroku-style `Procfile`), MongoDB Atlas. Frozen until cutover (Phase 11) |
 | Backend | `backend/` | Spring Boot REST API under `/api`. On staging inside the app image (below) |
 | Frontend | `frontend/` | React SPA; calls relative `/api/...` URLs (dev proxy → `:8080`). On staging inside the app image (below) |
 | App image | `Dockerfile`, `.dockerignore` (allow-list), `render.yaml` (repo root) | Node stage builds `frontend/dist` + copies repo-root `public/images` → Maven stage puts it in `static/` and packages the jar → `eclipse-temurin:25-jre`, non-root, JVM flags for 512 MB. Spring serves `/` (`index.html`), `/assets/**`, `/images/**`, `/api/**`, `/actuator/health`. No SPA fallback (no client router). `render.yaml` defines only the **staging** service (`readers-club-staging`, Free, branch `migration/spring-react`, DB `readersDB_staging` with its own Atlas user), live at `https://readers-club-staging.onrender.com` |
 | Local MongoDB | `compose.yaml` (repo root) | Dev only: `mongo:8.0` on `127.0.0.1:27017`, no auth, volume `readersclub_mongo-data`. Run steps in the root `README.md` |
 
-Target: the app image on Render against the **same Atlas data** (staging in Phase 6 on a copy, `readersDB_staging`; prod at cutover, Phase 7). Atlas runs MongoDB 8.0.36, the same major version as the `mongo:8.0` used by Testcontainers and compose. Until Phase 8, cover images stay files at `images/<name>.jpg`; the book's `image` field holds that relative path.
+Target: the app image on Render against the **same Atlas data** (staging in Phase 6 on a copy, `readersDB_staging`; prod at cutover, Phase 11). Atlas runs MongoDB 8.0.36, the same major version as the `mongo:8.0` used by Testcontainers and compose. Until Phase 10, cover images stay files at `images/<name>.jpg`; the book's `image` field holds that relative path.
 
 ## Data model
 MongoDB database `readersDB`, collection **`books`**, shared with the legacy app. **Keep it compatible with the legacy app:** both apps read and write this collection until cutover, so no schema migration.
@@ -32,7 +32,7 @@ Collection **`users`** (legacy only): the `admin` user's **bcrypt** hash of the 
 ## API contract (backend)
 Errors are RFC 9457 `ProblemDetail` (`application/problem+json`): `title`, `status`, `detail`, `instance`. Validation errors add `errors: {field: message}`. Any unexpected exception → 500 with a generic detail; the real message is only logged.
 
-**Auth (temporary until Phase 9 login):** `GET`/`HEAD /api/**` are public. **Every other `/api/**` request** needs header `X-Club-Password: <club password>`. Without it, or with a wrong one → **401** ProblemDetail (`title` "Unauthorized"), checked before validation or lookup, so nothing changes. Stateless: no session, no cookies, no CSRF. **No CORS:** the dev server proxies `/api` and prod is same-origin, so cross-origin browser calls are blocked.
+**Auth (temporary until Phase 7 login):** `GET`/`HEAD /api/**` are public. **Every other `/api/**` request** needs header `X-Club-Password: <club password>`. Without it, or with a wrong one → **401** ProblemDetail (`title` "Unauthorized"), checked before validation or lookup, so nothing changes. Stateless: no session, no cookies, no CSRF. **No CORS:** the dev server proxies `/api` and prod is same-origin, so cross-origin browser calls are blocked.
 
 | Endpoint | Input | Success | Errors |
 |---|---|---|---|

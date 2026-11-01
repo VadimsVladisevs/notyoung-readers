@@ -1,4 +1,4 @@
-# Render Blueprint. Staging only for now; prod switches to Docker at cutover (Phase 7).
+# Render Blueprint. Staging only for now; prod switches to Docker at cutover (Phase 11).
 services:
   - type: web
     name: readers-club-staging

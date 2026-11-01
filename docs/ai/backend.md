@@ -10,7 +10,7 @@ Spring Boot 4.1 (Spring Framework 7, Jackson 3), Java 25 (Temurin), Maven wrappe
 | `repository` | `BookRepository` (`MongoRepository`; `findByStatus` takes the **lowercase string**, not the enum) |
 | `model` | `Book` (`@Document("books")`), `BookStatus`, `Statistics`; `model.dto` request records; `model.converter` Mongo converters for the status |
 | `configuration` | `MongoConfiguration` (auditing + custom conversions), `WebConfiguration` (status converter for MVC), `PasswordProperties` (`readers-club.password-hash`) |
-| `security` | `SecurityConfiguration` (filter chain: GET/HEAD `/api/**` public, rest of `/api/**` authenticated, stateless, no CSRF/CORS) and `ClubPasswordFilter` (`X-Club-Password` header). Temporary, Phase 9 deletes it |
+| `security` | `SecurityConfiguration` (filter chain: GET/HEAD `/api/**` public, rest of `/api/**` authenticated, stateless, no CSRF/CORS) and `ClubPasswordFilter` (`X-Club-Password` header). Temporary, Phase 7 deletes it |
 | `exception` | Unchecked domain exceptions |
 | `validator` | `BookValidator` (status string check), `@ValidBookStatus` + its validator (not used on any field yet) |
 

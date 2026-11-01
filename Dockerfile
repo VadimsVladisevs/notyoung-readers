@@ -8,7 +8,7 @@ COPY frontend/package.json frontend/package-lock.json ./
 RUN npm ci
 COPY frontend/ ./
 RUN npm run build
-# Covers stay in the repo-root public/images until cutover (Phase 7)
+# Covers stay in the repo-root public/images until cutover (Phase 11) or the move into MongoDB (Phase 10)
 COPY public/images/ dist/images/
 
 # 2. Backend jar with the frontend in static/

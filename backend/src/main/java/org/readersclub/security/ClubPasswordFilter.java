@@ -18,7 +18,7 @@ import java.util.List;
 /**
  * Authenticates a request that carries the correct club password in {@link #HEADER}.
  * A missing or wrong password leaves the request anonymous, so protected endpoints answer 401.
- * Temporary: Phase 9 replaces it with a user login.
+ * Temporary: Phase 7 replaces it with a user login.
  */
 @Slf4j
 @RequiredArgsConstructor
