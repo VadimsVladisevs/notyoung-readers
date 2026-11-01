@@ -28,10 +28,14 @@ class SecurityTests extends IntegrationTest {
             {"title": "t", "author": "a", "image": "images/i.jpg", "tag": "x", "wiki": "w"}
             """;
 
+    private static final String EDIT_BODY = """
+            {"title": "changed", "author": "a", "tag": "x", "wiki": "w", "status": "new"}
+            """;
+
     private static Stream<Arguments> writeRequests() {
         return Stream.<Function<String, MockHttpServletRequestBuilder>>of(
                 id -> post("/api/books/add").contentType(MediaType.APPLICATION_JSON).content(VALID_BODY),
-                id -> patch("/api/books/{id}/update", id).contentType(MediaType.APPLICATION_JSON).content("{\"title\": \"changed\"}"),
+                id -> patch("/api/books/{id}/update", id).contentType(MediaType.APPLICATION_JSON).content(EDIT_BODY),
                 id -> patch("/api/books/{id}/start", id),
                 id -> patch("/api/books/{id}/finish", id).contentType(MediaType.APPLICATION_JSON).content("{\"rating\": 5}"),
                 id -> delete("/api/books/{id}", id)
@@ -106,6 +110,28 @@ class SecurityTests extends IntegrationTest {
         mockMvc.perform(patch("/api/books/{id}/start", book.getId()).session(session).with(csrf()))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.status").value("progress"));
+    }
+
+    @Test
+    void adminCanEditAfterLogin() throws Exception {
+        Book book = bookRepository.save(createDefaultBook(BookStatus.NEW));
+        MockHttpSession session = login(USERNAME, PASSWORD);
+
+        mockMvc.perform(patch("/api/books/{id}/update", book.getId()).session(session).with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON).content(EDIT_BODY))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.title").value("changed"));
+    }
+
+    @Test
+    void adminCanDeleteAfterLogin() throws Exception {
+        Book book = bookRepository.save(createDefaultBook(BookStatus.NEW));
+        MockHttpSession session = login(USERNAME, PASSWORD);
+
+        mockMvc.perform(delete("/api/books/{id}", book.getId()).session(session).with(csrf()))
+                .andExpect(status().isOk());
+
+        assertEquals(0, bookRepository.count());
     }
 
     @Test

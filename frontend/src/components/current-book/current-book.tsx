@@ -5,14 +5,17 @@ import { t } from '../../i18n';
 import { CURRENT_BOOK_CONSTANTS } from './current-book.constants';
 import * as styles from './current-book.styles';
 import { coverSrc } from '../../utils/cover';
+import EditBookButton from '../edit-book-button';
 
 export interface CurrentBookProps {
   book: Book | null;
   /** Omitted when the user may not select a book: the select button is hidden. */
   onSelectClick?: () => void;
+  /** Omitted when the user may not edit books: the pencils are hidden. */
+  onEdit?: (book: Book) => void;
 }
 
-const CurrentBook: React.FC<CurrentBookProps> = ({ book, onSelectClick }) => {
+const CurrentBook: React.FC<CurrentBookProps> = ({ book, onSelectClick, onEdit }) => {
   return (
     <Box id={CURRENT_BOOK_CONSTANTS.SECTION_ID} sx={styles.containerStyles}>
       <Container maxWidth="lg">
@@ -25,6 +28,7 @@ const CurrentBook: React.FC<CurrentBookProps> = ({ book, onSelectClick }) => {
             <Box sx={styles.textContainerStyles}>
               <Typography variant="h4" sx={styles.bookTitleStyles}>
                 {book.author}. {book.title}
+                {onEdit && <EditBookButton book={book} onEdit={onEdit} sx={styles.editButtonStyles} />}
               </Typography>
               <Typography variant="body1" sx={styles.bookDescriptionStyles}>
                 {book.wiki}

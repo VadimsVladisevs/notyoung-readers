@@ -25,7 +25,7 @@ MongoDB database `readersDB`, collection **`books`**, shared with the legacy app
 | `createdAt`, `updatedAt` | date | Spring Data auditing; **missing in some old docs** |
 | `__v` | int | Legacy Mongoose version key; ignored |
 
-Workflow of a book: `new` → (start) `progress` → (finish with rating) `finished`. The club reads one book at a time; the UI treats the first `progress` book as "current".
+Workflow of a book: `new` → (start) `progress` → (finish with rating) `finished`. The admin can also set any status by editing the book (Phase 9). The club reads one book at a time; the UI treats the first `progress` book as "current", and an edit that would make a second `progress` book is refused (409).
 
 Collection **`users`**, shared with the legacy app: login accounts. Today there is one shared club account, `admin`.
 
@@ -52,7 +52,7 @@ The session cookie is `HttpOnly`, `Secure`, `SameSite=Lax`, and the login change
 | `GET /api/books` | `?status=new\|progress\|finished` optional | 200 list | 400 unknown status |
 | `GET /api/books/{id}` | | 200 book | 404 |
 | `POST /api/books/add` | JSON `CreateBookDto`: title, author, tag, wiki required and not blank (stored trimmed); `image` optional | 201 book, status `new` (no `image` field when none was sent) | 400 + `errors` |
-| `PATCH /api/books/{id}/update` | JSON `BookDto`, any subset of fields; omitted fields keep their value | 200 book | 400, 404 |
+| `PATCH /api/books/{id}/update` | JSON `BookDto`, a **full edit**: title, author, tag, wiki required and not blank (stored trimmed); `status` required; `rating` 1–10, required for `finished`, stored as null for any other status. No `image` (ignored if sent; the stored cover is kept) | 200 book | 400 + `errors` (missing rating → `errors.ratingGivenWhenFinished`); 409 `progress` while another book is in progress; 404 |
 | `PATCH /api/books/{id}/start` | | 200 book in `progress` | 409 unless `new`; 404 |
 | `PATCH /api/books/{id}/finish` | JSON `{"rating": 1..10}`, number or numeric string | 200 book in `finished` | 400 + `errors.rating`; 409 unless `progress`; 404 |
 | `DELETE /api/books/{id}` | | 200, **empty body** | 404 |

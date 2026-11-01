@@ -1,7 +1,7 @@
 import { http, HttpResponse } from 'msw';
 import { server } from '../test/server';
 import { allBooks, current, newAnna } from '../test/books';
-import { ApiError, CSRF_HEADER, apiService, finishBook, getBooks, startBook } from './api';
+import { ApiError, CSRF_HEADER, apiService, deleteBook, editBook, finishBook, getBooks, startBook } from './api';
 
 /** Records every request so the test can inspect headers and body. */
 const recordRequests = () => {
@@ -69,6 +69,32 @@ describe('api', () => {
     server.use(http.delete('/api/books/:id', () => new HttpResponse(null, { status: 204 })));
 
     await expect(apiService.deleteBookById(newAnna.id)).resolves.toBeUndefined();
+  });
+
+  it('sends the edit as a PATCH with the CSRF token', async () => {
+    setCsrfCookie('tok');
+    const requests = recordRequests();
+    const edit = { title: 't', author: 'a', tag: 'x', wiki: 'w', status: 'finished' as const, rating: 8 };
+    server.use(http.patch('/api/books/:id/update', () => HttpResponse.json({ ...newAnna, ...edit })));
+
+    await editBook(newAnna.id, edit);
+
+    expect(requests[0].method).toBe('PATCH');
+    expect(new URL(requests[0].url).pathname).toBe(`/api/books/${newAnna.id}/update`);
+    expect(requests[0].headers.get(CSRF_HEADER)).toBe('tok');
+    expect(await requests[0].json()).toEqual(edit);
+  });
+
+  it('deletes with the CSRF token', async () => {
+    setCsrfCookie('tok');
+    const requests = recordRequests();
+    server.use(http.delete('/api/books/:id', () => new HttpResponse(null, { status: 200 })));
+
+    await deleteBook(newAnna.id);
+
+    expect(requests[0].method).toBe('DELETE');
+    expect(new URL(requests[0].url).pathname).toBe(`/api/books/${newAnna.id}`);
+    expect(requests[0].headers.get(CSRF_HEADER)).toBe('tok');
   });
 
   it('throws ApiError with the status and ProblemDetail detail', async () => {

@@ -137,6 +137,8 @@ export const apiService = new ApiService();
 export const getBooks = () => apiService.getAllBooks();
 export const getBookById = (id: string) => apiService.getBookById(id);
 export const addBook = (book: CreateBookDto) => apiService.addNewBook(book);
+export const editBook = (id: string, book: BookDto) => apiService.updateBook(id, book);
+export const deleteBook = (id: string) => apiService.deleteBookById(id);
 export const startBook = (id: string) => apiService.startBook(id);
 export const finishBook = (id: string, rating: number) => apiService.finishBook(id, { rating });
 export const getRandomBook = (booksId?: string[]) => apiService.getRandomBook(booksId);

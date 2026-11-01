@@ -62,3 +62,8 @@ export const featuretteImageStyles: SxProps<Theme> = {
   height: { xs: 300, md: 375 },
   objectFit: 'cover',
 };
+
+export const editButtonStyles: SxProps<Theme> = {
+  ml: 1,
+  verticalAlign: 'middle',
+};

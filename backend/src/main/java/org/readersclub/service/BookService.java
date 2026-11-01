@@ -3,6 +3,7 @@ package org.readersclub.service;
 import lombok.RequiredArgsConstructor;
 import org.readersclub.exception.BookNotFoundException;
 import org.readersclub.exception.BookStatusNotFoundException;
+import org.readersclub.exception.InvalidBookStateException;
 import org.readersclub.exception.NoBooksFoundException;
 import org.readersclub.model.Book;
 import org.readersclub.model.BookStatus;
@@ -61,17 +62,26 @@ public class BookService {
     }
 
     public Book updateAndSave(Book book, BookDto bookDto) {
+        if (BookStatus.PROGRESS.equals(bookDto.status()) && anotherBookInProgress(book.getId())) {
+            throw new InvalidBookStateException("Another book is already in progress");
+        }
+
         return bookRepository.save(Book.builder()
                 .id(book.getId())
                 .createdAt(book.getCreatedAt())
-                .title(Optional.ofNullable(bookDto.title()).orElse(book.getTitle()))
-                .author(Optional.ofNullable(bookDto.author()).orElse(book.getAuthor()))
-                .image(Optional.ofNullable(bookDto.image()).orElse(book.getImage()))
-                .wiki(Optional.ofNullable(bookDto.wiki()).orElse(book.getWiki()))
-                .tag(Optional.ofNullable(bookDto.tag()).orElse(book.getTag()))
-                .rating(Optional.ofNullable(bookDto.rating()).orElse(book.getRating()))
-                .status(Optional.ofNullable(bookDto.status()).orElse(book.getStatus()))
+                .image(book.getImage())
+                .title(bookDto.title().strip())
+                .author(bookDto.author().strip())
+                .wiki(bookDto.wiki().strip())
+                .tag(bookDto.tag().strip())
+                .status(bookDto.status())
+                .rating(BookStatus.FINISHED.equals(bookDto.status()) ? bookDto.rating() : null)
                 .build());
+    }
+
+    private boolean anotherBookInProgress(String id) {
+        return bookRepository.findByStatus(BookStatus.PROGRESS.getValue()).stream()
+                .anyMatch(other -> !other.getId().equals(id));
     }
 
     public Book finishAndSave(Book book, FinishBookDto bookDto) {

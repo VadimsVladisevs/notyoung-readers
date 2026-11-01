@@ -5,12 +5,15 @@ import { t } from '../../i18n';
 import { FINISHED_BOOKS_CONSTANTS } from './finished-books.constants';
 import * as styles from './finished-books.styles';
 import { coverSrc } from '../../utils/cover';
+import EditBookButton from '../edit-book-button';
 
 export interface FinishedBooksProps {
   books: Book[];
+  /** Omitted when the user may not edit books: the pencils are hidden. */
+  onEdit?: (book: Book) => void;
 }
 
-const FinishedBooks: React.FC<FinishedBooksProps> = ({ books }) => {
+const FinishedBooks: React.FC<FinishedBooksProps> = ({ books, onEdit }) => {
   return (
     <Box id={FINISHED_BOOKS_CONSTANTS.SECTION_ID} sx={styles.containerStyles}>
       <Container maxWidth="lg">
@@ -25,6 +28,7 @@ const FinishedBooks: React.FC<FinishedBooksProps> = ({ books }) => {
               <Box sx={styles.textColumnStyles}>
                 <Typography variant="h4" sx={styles.featuretteHeadingStyles}>
                   {index + 1}. {book.title}. {book.author}
+                  {onEdit && <EditBookButton book={book} onEdit={onEdit} sx={styles.editButtonStyles} />}
                 </Typography>
                 <Typography variant="body1" sx={styles.featuretteDescStyles}>
                   {book.wiki}

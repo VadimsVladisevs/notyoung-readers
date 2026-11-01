@@ -137,24 +137,26 @@ class BookServiceTests {
     }
 
     @Test
-    void updateMergesGivenFieldsAndKeepsCreatedAt() {
+    void updateReplacesFieldsTrimmedAndKeepsIdCreatedAtAndImage() {
         Instant createdAt = Instant.parse("2024-05-01T12:00:00Z");
         Book book = withId("1", BookStatus.FINISHED);
         book.setCreatedAt(createdAt);
         when(bookRepository.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
 
-        bookService.updateAndSave(book, BookDto.builder().title("New title").rating(9.0).build());
+        bookService.updateAndSave(book, BookDto.builder()
+                .title(" New title ").author(" New author ").tag(" New tag ").wiki(" New wiki ")
+                .status(BookStatus.FINISHED).rating(9.0).build());
 
         var captor = ArgumentCaptor.forClass(Book.class);
         verify(bookRepository).save(captor.capture());
         Book saved = captor.getValue();
         assertEquals("1", saved.getId());
         assertEquals("New title", saved.getTitle());
+        assertEquals("New author", saved.getAuthor());
+        assertEquals("New wiki", saved.getWiki());
+        assertEquals("New tag", saved.getTag());
         assertEquals(9.0, saved.getRating());
-        assertEquals("author", saved.getAuthor());
-        assertEquals("wiki", saved.getWiki());
         assertEquals("images/image.jpg", saved.getImage());
-        assertEquals("tag", saved.getTag());
         assertEquals(BookStatus.FINISHED, saved.getStatus());
         assertEquals(createdAt, saved.getCreatedAt());
     }

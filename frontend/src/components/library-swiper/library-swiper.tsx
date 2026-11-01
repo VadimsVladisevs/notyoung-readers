@@ -11,16 +11,19 @@ import * as styles from './library-swiper.styles';
 import 'swiper/css';
 import 'swiper/css/navigation';
 import { coverSrc } from '../../utils/cover';
+import EditBookButton from '../edit-book-button';
 
 export interface LibrarySwiperProps {
   books: Book[];
+  /** Omitted when the user may not edit books: the pencils are hidden. */
+  onEdit?: (book: Book) => void;
 }
 
 const getDirection = (): 'horizontal' | 'vertical' => {
   return window.innerWidth <= LIBRARY_SWIPER_CONSTANTS.BREAKPOINTS.MOBILE ? 'vertical' : 'horizontal';
 };
 
-const LibrarySwiper: React.FC<LibrarySwiperProps> = ({ books }) => {
+const LibrarySwiper: React.FC<LibrarySwiperProps> = ({ books, onEdit }) => {
   const [swiperInstance, setSwiperInstance] = useState<SwiperType | null>(null);
   const [direction, setDirection] = useState<'horizontal' | 'vertical'>(getDirection());
 
@@ -84,6 +87,7 @@ const LibrarySwiper: React.FC<LibrarySwiperProps> = ({ books }) => {
                     <Typography variant="caption" color="text.secondary" sx={styles.authorTextStyles}>
                       {book.author}
                     </Typography>
+                    {onEdit && <EditBookButton book={book} onEdit={onEdit} />}
                   </Box>
                 </Box>
               </SwiperSlide>

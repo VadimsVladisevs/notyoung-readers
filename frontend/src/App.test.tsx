@@ -3,15 +3,15 @@ import userEvent from '@testing-library/user-event';
 import { http, HttpResponse } from 'msw';
 import App from './App';
 import { server } from './test/server';
-import { allBooks, current, finishedHigh, newAnna, newBoris } from './test/books';
+import { allBooks, current, finishedHigh, finishedLow, newAnna, newBoris } from './test/books';
 import { CSRF_HEADER } from './services/api';
 
 const ADMIN = { username: 'admin', roles: ['ADMIN'] };
 const PASSWORD = 'secret';
 
 /** The backend session as MSW sees it: who /me returns, and a working login/logout. */
-const mockAuth = (loggedIn: boolean) => {
-  let user: typeof ADMIN | null = loggedIn ? ADMIN : null;
+const mockAuth = (loggedIn: boolean, account: { username: string; roles: string[] } = ADMIN) => {
+  let user: { username: string; roles: string[] } | null = loggedIn ? account : null;
   server.use(
     http.get('/api/auth/me', () =>
       user ? HttpResponse.json(user) : HttpResponse.json({ status: 401 }, { status: 401 })),
@@ -55,8 +55,8 @@ const mockWrites = () => {
   return calls;
 };
 
-const renderApp = async ({ loggedIn = true } = {}) => {
-  mockAuth(loggedIn);
+const renderApp = async ({ loggedIn = true, account = ADMIN } = {}) => {
+  mockAuth(loggedIn, account);
   const user = userEvent.setup();
   render(<App />);
   // The finished list shows once the books are loaded.
@@ -393,6 +393,171 @@ describe('App', () => {
       await user.click(within(dialog).getByRole('button', { name: 'Добавить' }));
 
       expect(await within(dialog).findByText('Не удалось сохранить. Попробуйте ещё раз.')).toBeInTheDocument();
+    });
+  });
+
+  describe('edit book', () => {
+    const editButtons = (title: string) => screen.queryAllByRole('button', { name: `Изменить «${title}»` });
+
+    /** Mocks update and delete: records each call and serves the changed books from then on. */
+    const mockEdit = () => {
+      const calls: { method: string; path: string; csrf: string | null; body?: unknown }[] = [];
+      let books = allBooks;
+      server.use(
+        http.get('/api/books', () => HttpResponse.json(books)),
+        http.patch('/api/books/:id/update', async ({ request, params }) => {
+          const body = (await request.json()) as Record<string, unknown>;
+          calls.push({ method: 'PATCH', path: new URL(request.url).pathname, csrf: request.headers.get(CSRF_HEADER), body });
+          books = books.map((b) => (b.id === params.id ? { ...b, ...body } : b));
+          return HttpResponse.json(books.find((b) => b.id === params.id));
+        }),
+        http.delete('/api/books/:id', ({ request, params }) => {
+          calls.push({ method: 'DELETE', path: new URL(request.url).pathname, csrf: request.headers.get(CSRF_HEADER) });
+          books = books.filter((b) => b.id !== params.id);
+          return new HttpResponse(null, { status: 200 });
+        }),
+      );
+      return calls;
+    };
+
+    const openEditDialog = async (user: ReturnType<typeof userEvent.setup>, title: string) => {
+      await user.click(editButtons(title)[0]);
+      return screen.findByRole('dialog', { name: /Редактировать книгу/ });
+    };
+
+    const chooseStatus = async (user: ReturnType<typeof userEvent.setup>, dialog: HTMLElement, status: string) => {
+      await user.click(within(dialog).getByRole('combobox', { name: 'Статус' }));
+      await user.click(await screen.findByRole('option', { name: status }));
+    };
+
+    it('is hidden while logged out', async () => {
+      await renderApp({ loggedIn: false });
+
+      expect(screen.queryAllByRole('button', { name: /^Изменить/ })).toHaveLength(0);
+    });
+
+    it('is hidden for a logged-in user without the ADMIN role', async () => {
+      await renderApp({ account: { username: 'reader', roles: [] } });
+
+      expect(screen.queryAllByRole('button', { name: /^Изменить/ })).toHaveLength(0);
+    });
+
+    it('shows a pencil on the library, current and finished books for the admin', async () => {
+      await renderApp();
+
+      expect(editButtons(newAnna.title)).toHaveLength(1); // library
+      expect(editButtons(current.title)).toHaveLength(2); // library + current book
+      expect(editButtons(finishedHigh.title)).toHaveLength(2); // library + finished list
+    });
+
+    it('opens filled with the book and saves the edit trimmed, with the CSRF token', async () => {
+      const calls = mockEdit();
+      const user = await renderApp();
+      const dialog = await openEditDialog(user, finishedLow.title);
+
+      expect(within(dialog).getByLabelText('Название')).toHaveValue(finishedLow.title);
+      expect(within(dialog).getByLabelText('Оценка')).toHaveValue('7.5');
+      const title = within(dialog).getByLabelText('Название');
+      await user.clear(title);
+      await user.type(title, '  Шинель ');
+      await user.click(within(dialog).getByRole('button', { name: 'Сохранить' }));
+
+      await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
+      expect(calls).toEqual([{
+        method: 'PATCH',
+        path: `/api/books/${finishedLow.id}/update`,
+        csrf: 'tok',
+        body: { title: 'Шинель', author: finishedLow.author, tag: finishedLow.tag, wiki: finishedLow.wiki, status: 'finished', rating: 7.5 },
+      }]);
+      expect((await screen.findAllByText('Шинель', { exact: false })).length).toBeGreaterThan(0);
+    });
+
+    it('shows the rating only for a finished book and sends none otherwise', async () => {
+      const calls = mockEdit();
+      const user = await renderApp();
+      const dialog = await openEditDialog(user, finishedLow.title);
+
+      await chooseStatus(user, dialog, 'В списке');
+      expect(within(dialog).queryByLabelText('Оценка')).not.toBeInTheDocument();
+      await user.click(within(dialog).getByRole('button', { name: 'Сохранить' }));
+
+      await waitFor(() => expect(calls).toHaveLength(1));
+      expect(calls[0].body).toEqual({
+        title: finishedLow.title, author: finishedLow.author, tag: finishedLow.tag, wiki: finishedLow.wiki, status: 'new',
+      });
+    });
+
+    it('needs a rating from 1 to 10 when the status is finished', async () => {
+      const calls = mockEdit();
+      const user = await renderApp();
+      const dialog = await openEditDialog(user, newAnna.title);
+
+      await chooseStatus(user, dialog, 'Прочитана');
+      await user.click(within(dialog).getByRole('button', { name: 'Сохранить' }));
+
+      expect(within(dialog).getByText('Введите оценку от 1 до 10')).toBeInTheDocument();
+      expect(calls).toEqual([]);
+    });
+
+    it('asks for every field before calling the backend', async () => {
+      const calls = mockEdit();
+      const user = await renderApp();
+      const dialog = await openEditDialog(user, newAnna.title);
+
+      await user.clear(within(dialog).getByLabelText('Автор'));
+      await user.click(within(dialog).getByRole('button', { name: 'Сохранить' }));
+
+      expect(within(dialog).getByText('Заполните все поля')).toBeInTheDocument();
+      expect(within(dialog).getByLabelText('Автор')).toHaveAttribute('aria-invalid', 'true');
+      expect(calls).toEqual([]);
+    });
+
+    it('explains a 409: another book is already in progress', async () => {
+      server.use(http.patch('/api/books/:id/update', () => HttpResponse.json({ status: 409 }, { status: 409 })));
+      const user = await renderApp();
+      const dialog = await openEditDialog(user, newAnna.title);
+
+      await chooseStatus(user, dialog, 'Читаем сейчас');
+      await user.click(within(dialog).getByRole('button', { name: 'Сохранить' }));
+
+      expect(await within(dialog).findByText('Уже есть текущая книга. Сначала смените её статус.')).toBeInTheDocument();
+    });
+
+    it('says the session expired on 401 and hides the pencils', async () => {
+      server.use(http.patch('/api/books/:id/update', () => HttpResponse.json({ status: 401 }, { status: 401 })));
+      const user = await renderApp();
+      const dialog = await openEditDialog(user, newAnna.title);
+
+      await user.click(within(dialog).getByRole('button', { name: 'Сохранить' }));
+
+      expect(await within(dialog).findByText('Сессия истекла. Войдите снова.')).toBeInTheDocument();
+      expect(screen.queryAllByRole('button', { name: /^Изменить/, hidden: true })).toHaveLength(0);
+    });
+
+    it('deletes only after the confirmation', async () => {
+      const calls = mockEdit();
+      const user = await renderApp();
+      const dialog = await openEditDialog(user, newAnna.title);
+
+      await user.click(within(dialog).getByRole('button', { name: 'Удалить' }));
+      expect(calls).toEqual([]);
+      await user.click(within(dialog).getByRole('button', { name: 'Да, удалить' }));
+
+      await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
+      expect(calls).toEqual([{ method: 'DELETE', path: `/api/books/${newAnna.id}`, csrf: 'tok' }]);
+      await waitFor(() => expect(editButtons(newAnna.title)).toHaveLength(0));
+    });
+
+    it('keeps the book when the confirmation is cancelled', async () => {
+      const calls = mockEdit();
+      const user = await renderApp();
+      const dialog = await openEditDialog(user, newAnna.title);
+
+      await user.click(within(dialog).getByRole('button', { name: 'Удалить' }));
+      await user.click(within(dialog).getByRole('button', { name: 'Нет' }));
+
+      expect(within(dialog).getByRole('button', { name: 'Сохранить' })).toBeInTheDocument();
+      expect(calls).toEqual([]);
     });
   });
 });

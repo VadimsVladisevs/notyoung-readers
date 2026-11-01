@@ -71,6 +71,22 @@
       "cancelButton": "Отмена",
       "submitButton": "Добавить"
     },
+    "editBook": {
+      "title": "Редактировать книгу",
+      "openButton": "Изменить «{title}»",
+      "statusLabel": "Статус",
+      "statusNew": "В списке",
+      "statusProgress": "Читаем сейчас",
+      "statusFinished": "Прочитана",
+      "ratingLabel": "Оценка",
+      "ratingRequired": "Введите оценку от 1 до 10",
+      "inProgressConflict": "Уже есть текущая книга. Сначала смените её статус.",
+      "deleteButton": "Удалить",
+      "deleteConfirm": "Удалить книгу насовсем?",
+      "deleteYes": "Да, удалить",
+      "deleteNo": "Нет",
+      "submitButton": "Сохранить"
+    },
     "login": {
       "title": "Вход",
       "usernameLabel": "Логин",

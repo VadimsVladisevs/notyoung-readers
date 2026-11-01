@@ -1,7 +1,7 @@
 import { useState, useCallback } from 'react';
 import { useBooksContext } from '../../context/books-context';
 import { useAuthContext } from '../../context/auth-context';
-import { Book, CreateBookDto } from '../../types';
+import { Book, BookDto, CreateBookDto } from '../../types';
 import * as api from '../../services/api';
 
 export const useHomePage = () => {
@@ -21,6 +21,7 @@ export const useHomePage = () => {
   const [pendingNewBook, setPendingNewBook] = useState<Book | null>(null);
   const [loginDialogOpen, setLoginDialogOpen] = useState(false);
   const [addBookDialogOpen, setAddBookDialogOpen] = useState(false);
+  const [editingBook, setEditingBook] = useState<Book | null>(null);
 
   const handleOpenSelectionDialog = useCallback(() => {
     setSelectionDialogOpen(true);
@@ -104,12 +105,46 @@ export const useHomePage = () => {
     setAddBookDialogOpen(false);
   }, [refreshBooks, sessionExpired]);
 
-  // Distinct tags (club members) for the add-book suggestions.
+  const handleOpenEditBook = useCallback((book: Book) => {
+    setEditingBook(book);
+  }, []);
+
+  const handleCloseEditBook = useCallback(() => {
+    setEditingBook(null);
+  }, []);
+
+  // Runs an edit or delete of the open book, then refreshes and closes; a 401 logs the user out.
+  const writeEditingBook = useCallback(async (write: (id: string) => Promise<unknown>) => {
+    if (!editingBook) return;
+    try {
+      await write(editingBook.id);
+    } catch (err) {
+      if (err instanceof api.ApiError && err.status === 401) {
+        sessionExpired();
+      }
+      throw err;
+    }
+    await refreshBooks();
+    setEditingBook(null);
+  }, [editingBook, refreshBooks, sessionExpired]);
+
+  const handleEditBook = useCallback(
+    (book: BookDto) => writeEditingBook((id) => api.editBook(id, book)),
+    [writeEditingBook]
+  );
+
+  const handleDeleteBook = useCallback(
+    () => writeEditingBook((id) => api.deleteBook(id)),
+    [writeEditingBook]
+  );
+
+  // Distinct tags (club members) for the add-book and edit-book suggestions.
   const tags = [...new Set(allBooks.map((book) => book.tag).filter(Boolean))].sort((a, b) => a.localeCompare(b));
 
   const handleLogout = useCallback(async () => {
     setSelectionDialogOpen(false);
     setAddBookDialogOpen(false);
+    setEditingBook(null);
     await logout();
   }, [logout]);
 
@@ -140,6 +175,11 @@ export const useHomePage = () => {
     handleOpenAddBookDialog,
     handleCloseAddBookDialog,
     handleAddBook,
+    editingBook,
+    handleOpenEditBook,
+    handleCloseEditBook,
+    handleEditBook,
+    handleDeleteBook,
     tags,
     handleLogout,
   };

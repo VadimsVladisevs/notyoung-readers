@@ -9,6 +9,7 @@ import StatisticsDialog from '../statistics-dialog';
 import ApprovalDialog from '../approval-dialog';
 import LoginDialog from '../login-dialog';
 import AddBookDialog from '../add-book-dialog';
+import EditBookDialog from '../edit-book-dialog';
 import Footer from '../footer';
 import { useHomePage } from './home-page.hooks';
 import * as styles from './home-page.styles';
@@ -41,6 +42,11 @@ const HomePage: React.FC = () => {
     handleOpenAddBookDialog,
     handleCloseAddBookDialog,
     handleAddBook,
+    editingBook,
+    handleOpenEditBook,
+    handleCloseEditBook,
+    handleEditBook,
+    handleDeleteBook,
     tags,
     handleLogout,
   } = useHomePage();
@@ -63,18 +69,19 @@ const HomePage: React.FC = () => {
       />
       
       <Box sx={styles.contentBoxStyles}>
-        <LibrarySwiper books={allBooks} />
+        <LibrarySwiper books={allBooks} onEdit={canSelectBook ? handleOpenEditBook : undefined} />
         
         <Divider sx={styles.dividerStyles} />
         
         <CurrentBook
           book={currentBook}
           onSelectClick={canSelectBook ? handleOpenSelectionDialog : undefined}
+          onEdit={canSelectBook ? handleOpenEditBook : undefined}
         />
         
         <Divider sx={styles.dividerStyles} />
         
-        <FinishedBooks books={finishedBooks} />
+        <FinishedBooks books={finishedBooks} onEdit={canSelectBook ? handleOpenEditBook : undefined} />
       </Box>
 
       <Footer />
@@ -110,6 +117,14 @@ const HomePage: React.FC = () => {
         open={addBookDialogOpen}
         onClose={handleCloseAddBookDialog}
         onSubmit={handleAddBook}
+        tags={tags}
+      />
+
+      <EditBookDialog
+        book={editingBook}
+        onClose={handleCloseEditBook}
+        onSubmit={handleEditBook}
+        onDelete={handleDeleteBook}
         tags={tags}
       />
     </Box>

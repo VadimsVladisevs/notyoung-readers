@@ -12,6 +12,7 @@ import org.readersclub.IntegrationTest;
 import org.readersclub.model.Book;
 import org.readersclub.model.BookStatus;
 import org.springframework.http.MediaType;
+import org.springframework.test.web.servlet.ResultActions;
 
 import java.time.Instant;
 import java.util.stream.Stream;
@@ -19,6 +20,7 @@ import java.util.stream.Stream;
 import static org.hamcrest.Matchers.*;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.readersclub.api.factory.BookFactory.createBook;
 import static org.readersclub.api.factory.BookFactory.createDefaultBook;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
@@ -176,51 +178,118 @@ class BookControllerTests extends IntegrationTest {
     @Nested
     class UpdateBook {
 
+        private static final String EDIT_BODY = """
+                {"title": "  New title ", "author": " New author ", "tag": " New tag ", "wiki": " New wiki ",
+                 "status": "finished", "rating": 8}""";
+
+        private ResultActions update(String id, String body) throws Exception {
+            return mockMvc.perform(patch("/api/books/{id}/update", id).with(admin())
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(body));
+        }
+
         @Test
-        void updatesOnlyGivenFieldsAndKeepsCreatedAt() throws Exception {
+        void replacesFieldsTrimmedAndKeepsCreatedAtAndImage() throws Exception {
             Book saved = save(BookStatus.FINISHED);
             Instant createdAt = bookRepository.findById(saved.getId()).orElseThrow().getCreatedAt();
 
-            mockMvc.perform(patch("/api/books/{id}/update", saved.getId()).with(admin())
-                            .contentType(MediaType.APPLICATION_JSON)
-                            .content("""
-                                    {"title": "New title"}"""))
+            update(saved.getId(), EDIT_BODY)
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$.title").value("New title"))
-                    .andExpect(jsonPath("$.author").value("author"))
                     .andExpect(jsonPath("$.status").value("finished"))
-                    .andExpect(jsonPath("$.rating").value(5.0));
+                    .andExpect(jsonPath("$.rating").value(8.0));
 
             Book updated = bookRepository.findById(saved.getId()).orElseThrow();
             assertEquals("New title", updated.getTitle());
-            assertEquals("wiki", updated.getWiki());
+            assertEquals("New author", updated.getAuthor());
+            assertEquals("New tag", updated.getTag());
+            assertEquals("New wiki", updated.getWiki());
+            assertEquals("images/image.jpg", updated.getImage());
             assertEquals(createdAt, updated.getCreatedAt());
         }
 
         @Test
+        void ignoresImageInBody() throws Exception {
+            Book saved = save(BookStatus.NEW);
+
+            update(saved.getId(), """
+                    {"title": "t", "author": "a", "tag": "x", "wiki": "w", "status": "new", "image": "images/other.jpg"}""")
+                    .andExpect(status().isOk());
+
+            assertEquals("images/image.jpg", bookRepository.findById(saved.getId()).orElseThrow().getImage());
+        }
+
+        @ParameterizedTest
+        @EnumSource(value = BookStatus.class, names = {"NEW", "PROGRESS"})
+        void clearsRatingWhenNotFinished(BookStatus status) throws Exception {
+            Book saved = save(BookStatus.FINISHED);
+
+            update(saved.getId(), """
+                    {"title": "t", "author": "a", "tag": "x", "wiki": "w", "status": "%s", "rating": 7}"""
+                    .formatted(status.getValue()))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.status").value(status.getValue()))
+                    .andExpect(jsonPath("$.rating").doesNotExist());
+
+            assertNull(bookRepository.findById(saved.getId()).orElseThrow().getRating());
+        }
+
+        @Test
+        void rejectsSecondBookInProgress() throws Exception {
+            save(BookStatus.PROGRESS);
+            Book saved = save(BookStatus.NEW);
+
+            update(saved.getId(), """
+                    {"title": "t", "author": "a", "tag": "x", "wiki": "w", "status": "progress"}""")
+                    .andExpect(status().isConflict());
+
+            assertEquals(BookStatus.NEW, bookRepository.findById(saved.getId()).orElseThrow().getStatus());
+        }
+
+        @Test
+        void keepsTheBookInProgress() throws Exception {
+            Book saved = save(BookStatus.PROGRESS);
+
+            update(saved.getId(), """
+                    {"title": "Renamed", "author": "a", "tag": "x", "wiki": "w", "status": "progress"}""")
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.title").value("Renamed"));
+        }
+
+        @Test
         void returns404WhenMissing() throws Exception {
-            mockMvc.perform(patch("/api/books/{id}/update", MISSING_ID).with(admin())
-                            .contentType(MediaType.APPLICATION_JSON)
-                            .content("{}"))
+            update(MISSING_ID, EDIT_BODY)
                     .andExpect(status().isNotFound());
         }
 
         @ParameterizedTest
         @ValueSource(strings = {
                 """
-                {"image": "cover.png"}""",
+                {"title": " ", "author": "a", "tag": "x", "wiki": "w", "status": "new"}""",
                 """
-                {"rating": 11}""",
+                {"title": "t", "author": "", "tag": "x", "wiki": "w", "status": "new"}""",
                 """
-                {"status": "reading"}"""
+                {"title": "t", "author": "a", "tag": " ", "wiki": "w", "status": "new"}""",
+                """
+                {"title": "t", "author": "a", "tag": "x", "status": "new"}""",
+                """
+                {"title": "t", "author": "a", "tag": "x", "wiki": "w"}""",
+                """
+                {"title": "t", "author": "a", "tag": "x", "wiki": "w", "status": "reading"}""",
+                """
+                {"title": "t", "author": "a", "tag": "x", "wiki": "w", "status": "finished"}""",
+                """
+                {"title": "t", "author": "a", "tag": "x", "wiki": "w", "status": "finished", "rating": 11}""",
+                """
+                {"title": "t", "author": "a", "tag": "x", "wiki": "w", "status": "finished", "rating": 0}"""
         })
         void rejectsInvalidValues(String body) throws Exception {
             Book saved = save(BookStatus.NEW);
 
-            mockMvc.perform(patch("/api/books/{id}/update", saved.getId()).with(admin())
-                            .contentType(MediaType.APPLICATION_JSON)
-                            .content(body))
+            update(saved.getId(), body)
                     .andExpect(status().isBadRequest());
+
+            assertEquals("title", bookRepository.findById(saved.getId()).orElseThrow().getTitle());
         }
     }
 
@@ -330,6 +399,9 @@ class BookControllerTests extends IntegrationTest {
                     .andExpect(status().isOk());
 
             assertFalse(bookRepository.existsById(book.getId()));
+
+            mockMvc.perform(get("/api/books/{id}", book.getId()))
+                    .andExpect(status().isNotFound());
         }
 
         @Test

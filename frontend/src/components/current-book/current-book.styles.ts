@@ -63,3 +63,8 @@ export const selectButtonStyles: SxProps<Theme> = {
   mt: 2,
   textTransform: 'none',
 };
+
+export const editButtonStyles: SxProps<Theme> = {
+  ml: 1,
+  verticalAlign: 'middle',
+};

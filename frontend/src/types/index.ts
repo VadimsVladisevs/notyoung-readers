@@ -26,12 +26,15 @@ export interface CreateBookDto {
   wiki: string;
 }
 
+/** Full edit of a book; the cover can't be changed here (upload comes in Phase 10). */
 export interface BookDto {
-  title?: string;
-  author?: string;
-  image?: string;
-  tag?: string;
-  wiki?: string;
+  title: string;
+  author: string;
+  tag: string;
+  wiki: string;
+  status: BookStatus;
+  /** Required for `finished`; left out for any other status. */
+  rating?: number;
 }
 
 export interface FinishBookDto {
