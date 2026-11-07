@@ -48,6 +48,7 @@ const FinishedBooks: React.FC<FinishedBooksProps> = ({ books, onEdit }) => {
                   component="img"
                   src={coverSrc(book)}
                   alt={book.title}
+                  loading={index === 0 ? undefined : 'lazy'}
                   sx={styles.featuretteImageStyles}
                 />
               </Box>

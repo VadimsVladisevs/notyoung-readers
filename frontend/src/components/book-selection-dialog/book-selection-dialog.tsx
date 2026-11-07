@@ -162,6 +162,7 @@ const BookSelectionDialog: React.FC<BookSelectionDialogProps> = ({
                       component="img"
                       src={coverSrc(book)}
                       alt={book.title}
+                      loading="lazy"
                       sx={styles.cardImageStyles}
                     />
                   </Box>

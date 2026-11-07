@@ -16,6 +16,7 @@ import {
   Menu,
   MenuItem,
   Switch,
+  SvgIcon,
 } from '@mui/material';
 import MenuIcon from '@mui/icons-material/Menu';
 import AccountCircleIcon from '@mui/icons-material/AccountCircle';
@@ -182,7 +183,9 @@ const MenuAppBar: React.FC<MenuAppBarProps> = ({
                 onClick={() => openExternalLink(MENU_APP_BAR_CONSTANTS.SOCIAL_LINKS.DISCORD)}
                 sx={styles.iconButtonStyles}
               >
-                <Box component="i" className="fab fa-discord" sx={styles.discordIconStyles} />
+                <SvgIcon sx={styles.discordIconStyles}>
+                  <path d={MENU_APP_BAR_CONSTANTS.DISCORD_ICON_PATH} />
+                </SvgIcon>
               </IconButton>
               <IconButton
                 color="inherit"

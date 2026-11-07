@@ -14,6 +14,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.util.concurrent.TimeUnit;
+
 @RestController
 @Slf4j
 @RequiredArgsConstructor
@@ -22,7 +24,8 @@ public class CoverController {
     private final CoverService coverService;
     private final BookService bookService;
 
-    // Public (outside /api). Re-uploading can put new bytes under the same name, so browsers revalidate.
+    // Public (outside /api). Browsers may reuse a cover without asking: an upload changes the book's updatedAt,
+    // so the UI requests the new cover at a new ?v= URL even when the name stays the same.
     // The ETag is the GridFS file id, which changes on every upload; a matching If-None-Match gets 304.
     @GetMapping("/images/{filename}")
     public ResponseEntity<Resource> getCover(@PathVariable String filename) {
@@ -31,7 +34,7 @@ public class CoverController {
 
         return ResponseEntity.ok()
                 .contentType(MediaType.IMAGE_JPEG)
-                .cacheControl(CacheControl.noCache())
+                .cacheControl(CacheControl.maxAge(30, TimeUnit.DAYS).cachePublic())
                 .eTag(cover.getGridFSFile().getObjectId().toHexString())
                 .body(cover);
     }
