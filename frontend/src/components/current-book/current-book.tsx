@@ -42,6 +42,7 @@ const CurrentBook: React.FC<CurrentBookProps> = ({ book, onSelectClick, onEdit }
                 component="img"
                 src={coverSrc(book)}
                 alt={book.title}
+                fetchPriority="high"
                 sx={styles.imageStyles}
               />
             </Box>

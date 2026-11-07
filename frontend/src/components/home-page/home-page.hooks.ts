@@ -4,11 +4,12 @@ import { useAuthContext } from '../../context/auth-context';
 import { Book, BookDto, CreateBookDto } from '../../types';
 import * as api from '../../services/api';
 import { CoverUploadError } from '../../utils/cover';
+import { shrinkCover } from '../../utils/shrink-cover';
 
 /** Uploads the cover of a saved book. A 401 stays an `ApiError`; any other failure becomes `CoverUploadError`. */
 const uploadCover = async (id: string, cover: File) => {
   try {
-    await api.uploadCover(id, cover);
+    await api.uploadCover(id, await shrinkCover(cover));
   } catch (err) {
     throw err instanceof api.ApiError && err.status === 401 ? err : new CoverUploadError();
   }

@@ -68,7 +68,7 @@ class CoverControllerTests extends IntegrationTest {
                     .andExpect(status().isOk())
                     .andExpect(content().contentType(MediaType.IMAGE_JPEG))
                     .andExpect(content().bytes(JPEG))
-                    .andExpect(header().string(HttpHeaders.CACHE_CONTROL, "no-cache"))
+                    .andExpect(header().string(HttpHeaders.CACHE_CONTROL, "max-age=2592000, public"))
                     .andExpect(header().exists(HttpHeaders.ETAG));
         }
 
